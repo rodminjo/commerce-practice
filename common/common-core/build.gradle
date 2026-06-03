@@ -1,0 +1,14 @@
+plugins {
+	id 'java-library'
+}
+
+description = 'Pure-Java shared primitives — safe for domain layer (no framework deps).'
+
+// Production code here MUST stay framework-free so the hexagonal domain layer
+// can depend on common-core without pulling Spring transitively.
+// Web error handlers / validation helpers, when needed, go to a dedicated
+// common-web module rather than leaking Spring through this api surface.
+
+dependencies {
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

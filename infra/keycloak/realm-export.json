@@ -1,0 +1,75 @@
+{
+  "realm": "commerce",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "roles": {
+    "realm": [
+      {"name": "user", "description": "Standard customer role"},
+      {"name": "admin", "description": "Admin role for back-office"}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "apisix",
+      "name": "APISIX Gateway",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "apisix-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "bearerOnly": false,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "attributes": {
+        "access.token.lifespan": "1800"
+      }
+    },
+    {
+      "clientId": "commerce-frontend",
+      "name": "Commerce Frontend (public)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:*", "http://127.0.0.1:*"],
+      "webOrigins": ["+"]
+    }
+  ],
+  "users": [
+    {
+      "username": "test",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "test@commerce.local",
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [
+        {"type": "password", "value": "test", "temporary": false}
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "admin-user",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@commerce.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {"type": "password", "value": "admin", "temporary": false}
+      ],
+      "realmRoles": ["user", "admin"]
+    }
+  ]
+}

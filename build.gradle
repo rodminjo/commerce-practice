@@ -1,0 +1,58 @@
+plugins {
+	alias(libs.plugins.spring.boot) apply false
+	alias(libs.plugins.spring.dep.mgmt) apply false
+	alias(libs.plugins.protobuf) apply false
+}
+
+allprojects {
+	group = 'com.rodminjo'
+	version = '0.0.1-SNAPSHOT'
+}
+
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'io.spring.dependency-management'
+
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(25)
+		}
+	}
+
+	repositories {
+		mavenCentral()
+		maven { url = 'https://packages.confluent.io/maven/' }
+	}
+
+	dependencyManagement {
+		imports {
+			mavenBom "org.springframework.boot:spring-boot-dependencies:${libs.versions.springBoot.get()}"
+		}
+	}
+
+	dependencies {
+		compileOnly 'org.projectlombok:lombok'
+		annotationProcessor 'org.projectlombok:lombok'
+		testCompileOnly 'org.projectlombok:lombok'
+		testAnnotationProcessor 'org.projectlombok:lombok'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+		constraints {
+			// CVE-2025-33042: Avro Java SDK code injection (≤1.11.4, 1.12.0).
+			// Pulled transitively by io.confluent:kafka-schema-registry-client.
+			// Pin to 1.11.5 (patch on 1.11.x — matches Confluent 8.0.0's line).
+			implementation("org.apache.avro:avro:${libs.versions.avroPatched.get()}") {
+				because 'CVE-2025-33042 — code injection in Avro 1.11.4/1.12.0'
+			}
+		}
+	}
+
+	tasks.withType(JavaCompile).configureEach {
+		options.encoding = 'UTF-8'
+		options.compilerArgs += ['-parameters']
+	}
+
+	tasks.withType(Test).configureEach {
+		useJUnitPlatform()
+	}
+}

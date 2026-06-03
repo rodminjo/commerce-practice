@@ -1,0 +1,22 @@
+pluginManagement {
+	repositories {
+		gradlePluginPortal()
+		mavenCentral()
+	}
+}
+
+dependencyResolutionManagement {
+	repositories {
+		mavenCentral()
+		maven { url = 'https://packages.confluent.io/maven/' }
+	}
+}
+
+rootProject.name = 'commerce'
+
+include 'schemas'
+include 'common:common-core'
+include 'common:common-outbox'
+include 'services:order-service'
+include 'services:payment-service'
+include 'services:inventory-service'

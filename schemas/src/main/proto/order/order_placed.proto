@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package commerce.events.order;
+
+option java_package = "com.rodminjo.commerce.events.order";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+message OrderPlaced {
+  string order_id = 1;
+  string customer_id = 2;
+  repeated OrderLineItem items = 3;
+  int64 total_amount_minor = 4;
+  string currency = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+}
+
+message OrderLineItem {
+  string product_id = 1;
+  int32 quantity = 2;
+  int64 unit_price_minor = 3;
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package commerce.events.payment;
+
+option java_package = "com.rodminjo.commerce.events.payment";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+message PaymentRequested {
+  string order_id = 1;
+  string payment_id = 2;
+  int64 amount_minor = 3;
+  string currency = 4;
+  string idempotency_key = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+}

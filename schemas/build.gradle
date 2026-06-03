@@ -1,0 +1,21 @@
+plugins {
+	id 'java-library'
+	alias(libs.plugins.protobuf)
+}
+
+description = 'Protobuf event contracts shared across services and registered to Schema Registry'
+
+dependencies {
+	api libs.protobuf.java
+	api libs.protobuf.java.util
+}
+
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+	}
+}
+
+tasks.named('processResources') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

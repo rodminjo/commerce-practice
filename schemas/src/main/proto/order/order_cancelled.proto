@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package commerce.events.order;
+
+option java_package = "com.rodminjo.commerce.events.order";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+message OrderCancelled {
+  string order_id = 1;
+  string reason = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}

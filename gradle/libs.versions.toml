@@ -1,0 +1,24 @@
+[versions]
+springBoot = "4.0.6"
+springDepMgmt = "1.1.7"
+protobuf = "3.25.5"
+protobufPlugin = "0.9.4"
+confluent = "8.0.0"
+avroPatched = "1.11.5"
+pgvector = "0.1.6"
+redisson = "3.45.1"
+otelStarter = "2.11.0"
+
+[libraries]
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
+kafka-protobuf-serializer = { module = "io.confluent:kafka-protobuf-serializer", version.ref = "confluent" }
+kafka-schema-registry-client = { module = "io.confluent:kafka-schema-registry-client", version.ref = "confluent" }
+pgvector = { module = "com.pgvector:pgvector", version.ref = "pgvector" }
+redisson-spring-boot-starter = { module = "org.redisson:redisson-spring-boot-starter", version.ref = "redisson" }
+otel-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter", version.ref = "otelStarter" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dep-mgmt = { id = "io.spring.dependency-management", version.ref = "springDepMgmt" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
