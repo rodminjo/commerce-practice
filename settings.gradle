@@ -16,6 +16,7 @@ rootProject.name = 'commerce'
 
 include 'schemas'
 include 'common:common-core'
+include 'common:common-infra'
 include 'common:common-outbox'
 include 'services:order-service'
 include 'services:payment-service'

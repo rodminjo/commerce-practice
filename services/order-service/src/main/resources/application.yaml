@@ -40,6 +40,16 @@ spring:
         jwt:
           issuer-uri: http://localhost:8088/realms/commerce
 
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+outbox:
+  relay:
+    poll-interval-ms: 1000
+    batch-size: 100
+
 server:
   port: 8081
 

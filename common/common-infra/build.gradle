@@ -1,0 +1,33 @@
+plugins {
+	id 'java-library'
+}
+
+description = 'Shared infrastructure (framework/external deps allowed) — JPA auditing base entity, id generators.'
+
+// Unlike common-core (framework-free), this module is the home for reusable infrastructure
+// that needs Spring/JPA/external libraries. Domain/application code must NOT depend on it for
+// pure types — those stay in common-core.
+dependencies {
+	api project(':common:common-core')
+
+	// JPA auditing base entity (@MappedSuperclass + AuditingEntityListener) lives here.
+	api 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// AuditorAware reads the authenticated principal from the SecurityContext.
+	// Also supplies AuthenticationException / AccessDeniedException for the web handler.
+	implementation 'org.springframework.security:spring-security-core'
+
+	// Web error handling (GlobalExceptionHandler/ErrorResponse) lives in common.infra.web.
+	// compileOnly so a non-web consumer of common-infra (e.g. batch) doesn't pull a web server;
+	// web services already bring these starters, so the handler activates at runtime there.
+	compileOnly 'org.springframework.boot:spring-boot-starter-webmvc'
+	compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+
+	// TSID — time-sorted long id generator (TSID.Factory.getTsid().toLong()).
+	implementation 'io.hypersistence:hypersistence-tsid:2.1.4'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	// Web handler tests (standalone MockMvc + bean validation).
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation'
+}

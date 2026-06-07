@@ -6,8 +6,9 @@ description = 'Pure-Java shared primitives — safe for domain layer (no framewo
 
 // Production code here MUST stay framework-free so the hexagonal domain layer
 // can depend on common-core without pulling Spring transitively.
-// Web error handlers / validation helpers, when needed, go to a dedicated
-// common-web module rather than leaking Spring through this api surface.
+// Pure error types (ErrorType/ErrorCode/CommonErrorCode/DomainException) live here;
+// web error handlers / validation helpers go to common-infra's web package
+// (com.rodminjo.commerce.common.infra.web) rather than leaking Spring through this api surface.
 
 dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

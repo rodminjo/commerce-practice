@@ -6,6 +6,7 @@ description = 'Order service — places orders and orchestrates the Saga'
 
 dependencies {
 	implementation project(':common:common-core')
+	implementation project(':common:common-infra')
 	implementation project(':common:common-outbox')
 	implementation project(':schemas')
 
@@ -21,6 +22,17 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation libs.kafka.protobuf.serializer
 
+	// MyBatis (read/query side) — 4.0.x line targets Spring Boot 4 / Spring Framework 7 / Java 17+.
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
+
+	// MapStruct (web ↔ command/response mapping). lombok-mapstruct-binding makes the two
+	// annotation processors cooperate (Lombok must run before MapStruct).
+	implementation 'org.mapstruct:mapstruct:1.6.3'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+	// (id generation — UUID/TSID — now lives in common-infra)
+
 	runtimeOnly 'org.postgresql:postgresql'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -31,7 +43,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.testcontainers:postgresql'
-	testImplementation 'org.testcontainers:kafka'
-	testImplementation 'org.testcontainers:junit-jupiter'
+	// Docker-free integration testing: real embedded Postgres (Zonky) + @EmbeddedKafka (spring-kafka-test).
+	testImplementation enforcedPlatform('io.zonky.test.postgres:embedded-postgres-binaries-bom:17.10.0')
+	testImplementation 'io.zonky.test:embedded-postgres:2.2.2'
+	testRuntimeOnly 'io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8'
 }
