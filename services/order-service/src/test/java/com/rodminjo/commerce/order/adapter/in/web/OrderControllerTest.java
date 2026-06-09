@@ -58,7 +58,7 @@ class OrderControllerTest {
   @DisplayName("POST /api/orders without token → 401")
   void placeOrder_noToken_returns401() throws Exception {
     String body =
-        """
+"""
 {"customerId":"c1","items":[{"productId":"p1","quantity":1,"unitPriceMinor":1000}],"currency":"KRW"}
 """;
     mockMvc
@@ -74,7 +74,7 @@ class OrderControllerTest {
         .thenReturn(new PlaceOrderUseCase.PlaceOrderResult(orderId));
 
     String body =
-        """
+"""
 {"customerId":"c1","items":[{"productId":"p1","quantity":1,"unitPriceMinor":1000}],"currency":"KRW"}
 """;
 
@@ -124,7 +124,7 @@ class OrderControllerTest {
   @DisplayName("POST /api/orders with blank customerId → 400 VALIDATION_ERROR")
   void placeOrder_blankCustomerId_returns400() throws Exception {
     String body =
-        """
+"""
 {"customerId":"","items":[{"productId":"p1","quantity":1,"unitPriceMinor":1000}],"currency":"KRW"}
 """;
     mockMvc
@@ -152,7 +152,7 @@ class OrderControllerTest {
   @DisplayName("POST /api/orders with currency not 3 chars → 400 VALIDATION_ERROR")
   void placeOrder_invalidCurrencyLength_returns400() throws Exception {
     String body =
-        """
+"""
 {"customerId":"c1","items":[{"productId":"p1","quantity":1,"unitPriceMinor":1000}],"currency":"KR"}
 """;
     mockMvc
@@ -169,7 +169,7 @@ class OrderControllerTest {
         .thenThrow(new DomainException(OrderErrorCode.INVALID_STATE_TRANSITION));
 
     String body =
-        """
+"""
 {"customerId":"c1","items":[{"productId":"p1","quantity":1,"unitPriceMinor":1000}],"currency":"KRW"}
 """;
     mockMvc

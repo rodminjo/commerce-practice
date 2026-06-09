@@ -8,6 +8,8 @@ avroPatched = "1.11.5"
 pgvector = "0.1.6"
 redisson = "3.45.1"
 otelStarter = "2.11.0"
+spotless = "7.2.1"
+googleJavaFormat = "1.35.0"
 
 [libraries]
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
@@ -22,3 +24,4 @@ otel-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentele
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
 spring-dep-mgmt = { id = "io.spring.dependency-management", version.ref = "springDepMgmt" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

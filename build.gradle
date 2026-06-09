@@ -2,6 +2,7 @@ plugins {
 	alias(libs.plugins.spring.boot) apply false
 	alias(libs.plugins.spring.dep.mgmt) apply false
 	alias(libs.plugins.protobuf) apply false
+	alias(libs.plugins.spotless) apply false
 }
 
 allprojects {
@@ -12,10 +13,20 @@ allprojects {
 subprojects {
 	apply plugin: 'java'
 	apply plugin: 'io.spring.dependency-management'
+	apply plugin: 'com.diffplug.spotless'
 
 	java {
 		toolchain {
 			languageVersion = JavaLanguageVersion.of(25)
+		}
+	}
+
+	// 코드 스타일: Google Java Format (2-space). `spotlessApply`로 적용, `spotlessCheck`로 검증.
+	// JDK 25 데몬에서 google-java-format 실행에 필요한 --add-exports 는 gradle.properties 참고.
+	spotless {
+		java {
+			target 'src/**/*.java'
+			googleJavaFormat(libs.versions.googleJavaFormat.get())
 		}
 	}
 

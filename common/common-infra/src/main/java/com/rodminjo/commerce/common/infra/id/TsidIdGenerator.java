@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class TsidIdGenerator implements IdGenerator<Long> {
 
-    @Override
-    public Long newId() {
-        return TSID.Factory.getTsid().toLong();
-    }
+  @Override
+  public Long newId() {
+    return TSID.Factory.getTsid().toLong();
+  }
 }
