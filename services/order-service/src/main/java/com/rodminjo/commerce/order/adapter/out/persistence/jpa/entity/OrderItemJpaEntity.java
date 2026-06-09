@@ -22,7 +22,7 @@ public class OrderItemJpaEntity extends BaseEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "order_id", nullable = false)
+  @Column(nullable = false)
   private UUID orderId;
 
   @Column(nullable = false, length = 64)
@@ -42,7 +42,8 @@ public class OrderItemJpaEntity extends BaseEntity {
   }
 
   public static OrderItemJpaEntity fromDomain(UUID orderId, OrderLineItem item) {
-    return new OrderItemJpaEntity(orderId, item.getProductId(), item.getQuantity(), item.getUnitPriceMinor());
+    return new OrderItemJpaEntity(
+        orderId, item.getProductId(), item.getQuantity(), item.getUnitPriceMinor());
   }
 
   public OrderLineItem toDomain() {

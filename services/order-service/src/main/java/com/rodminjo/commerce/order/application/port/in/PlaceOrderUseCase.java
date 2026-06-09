@@ -5,19 +5,12 @@ import java.util.UUID;
 
 public interface PlaceOrderUseCase {
 
-    PlaceOrderResult place(PlaceOrderCommand command);
+  PlaceOrderResult place(PlaceOrderCommand command);
 
-    record PlaceOrderCommand(
-            String customerId,
-            List<OrderItemCommand> items,
-            String currency
-    ) {
-        public record OrderItemCommand(
-                String productId,
-                int quantity,
-                long unitPriceMinor
-        ) {}
-    }
+  record PlaceOrderCommand(String customerId, List<OrderItemCommand> items, String currency) {
 
-    record PlaceOrderResult(UUID orderId) {}
+    public record OrderItemCommand(String productId, int quantity, long unitPriceMinor) {}
+  }
+
+  record PlaceOrderResult(UUID orderId) {}
 }

@@ -6,5 +6,5 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface OrderQueryMapper {
 
-    OrderRow findOrderById(@Param("id") String id);
+  OrderRow findOrderById(@Param("id") String id);
 }

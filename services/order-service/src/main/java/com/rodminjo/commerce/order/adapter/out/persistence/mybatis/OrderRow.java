@@ -9,10 +9,9 @@ import lombok.Setter;
 @Getter
 public class OrderRow {
 
-    private String id;
-    private String status;
-    private long totalAmountMinor;
-    private String currency;
-    private List<OrderItemRow> items = new ArrayList<>();
-
+  private String id;
+  private String status;
+  private long totalAmountMinor;
+  private String currency;
+  private List<OrderItemRow> items = new ArrayList<>();
 }

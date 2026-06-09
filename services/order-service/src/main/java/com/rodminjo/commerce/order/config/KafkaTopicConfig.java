@@ -8,19 +8,13 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
 
-    @Bean
-    public NewTopic orderPlaced() {
-        return TopicBuilder.name("order.placed")
-                .partitions(3)
-                .replicas(1)
-                .build();
-    }
+  @Bean
+  public NewTopic orderPlaced() {
+    return TopicBuilder.name("order.placed").partitions(3).replicas(1).build();
+  }
 
-    @Bean
-    public NewTopic orderCancelled() {
-        return TopicBuilder.name("order.cancelled")
-                .partitions(3)
-                .replicas(1)
-                .build();
-    }
+  @Bean
+  public NewTopic orderCancelled() {
+    return TopicBuilder.name("order.cancelled").partitions(3).replicas(1).build();
+  }
 }

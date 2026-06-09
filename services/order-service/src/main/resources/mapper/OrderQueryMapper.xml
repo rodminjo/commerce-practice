@@ -16,15 +16,14 @@
         </collection>
     </resultMap>
 
-    <!-- Read model: order header + line items in one join. Tables resolve via the order_svc search_path. -->
     <select id="findOrderById" resultMap="orderRowMap">
-        SELECT o.id::text                AS id,
-               o.status                  AS status,
-               o.total_amount_minor      AS total_amount_minor,
-               o.currency                AS currency,
-               i.product_id             AS item_product_id,
-               i.quantity               AS item_quantity,
-               i.unit_price_minor       AS item_unit_price_minor
+        SELECT o.id::text AS id,
+               o.status AS status,
+               o.total_amount_minor AS total_amount_minor,
+               o.currency AS currency,
+               i.product_id AS item_product_id,
+               i.quantity AS item_quantity,
+               i.unit_price_minor AS item_unit_price_minor
         FROM orders o
         LEFT JOIN order_items i ON i.order_id = o.id
         WHERE o.id = #{id}::uuid

@@ -40,3 +40,5 @@ out/
 .claude/
 docs/
 .omc/
+# macOS
+.DS_Store

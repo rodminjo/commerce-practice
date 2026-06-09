@@ -7,8 +7,7 @@ import lombok.Setter;
 @Getter
 public class OrderItemRow {
 
-    private String productId;
-    private int quantity;
-    private long unitPriceMinor;
-
+  private String productId;
+  private int quantity;
+  private long unitPriceMinor;
 }
