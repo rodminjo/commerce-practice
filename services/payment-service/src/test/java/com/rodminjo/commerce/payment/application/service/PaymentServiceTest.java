@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class PaymentServiceTest {
@@ -38,58 +39,68 @@ class PaymentServiceTest {
     return new ProcessPaymentCommand("order-1", 2000L, "KRW", "order-1");
   }
 
-  @Test
-  @DisplayName("기본: 결제 성공 → COMPLETED 저장 + payment.completed 적재")
-  void successPath() {
-    service.process(command());
+  @Nested
+  @DisplayName("결제 성공 경로")
+  class 결제성공 {
 
-    assertThat(savePaymentPort.single().getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+    @Test
+    @DisplayName("기본: 결제 성공 → COMPLETED 저장 + payment.completed 적재")
+    void successPath() {
+      service.process(command());
 
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.aggregateType()).isEqualTo("Payment");
-    assertThat(appended.aggregateId()).isEqualTo("order-1");
-    assertThat(appended.topic()).isEqualTo("payment.completed");
-    assertThat(appended.partitionKey()).isEqualTo("order-1");
-    assertThat(appended.event()).isInstanceOf(PaymentCompleted.class);
-    PaymentCompleted event = (PaymentCompleted) appended.event();
-    assertThat(event.getOrderId()).isEqualTo("order-1");
-    assertThat(event.getPaymentId()).isEqualTo(PAYMENT_ID.toString());
-    assertThat(event.getAmountMinor()).isEqualTo(2000L);
+      assertThat(savePaymentPort.single().getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.aggregateType()).isEqualTo("Payment");
+      assertThat(appended.aggregateId()).isEqualTo("order-1");
+      assertThat(appended.topic()).isEqualTo("payment.completed");
+      assertThat(appended.partitionKey()).isEqualTo("order-1");
+      assertThat(appended.event()).isInstanceOf(PaymentCompleted.class);
+      PaymentCompleted event = (PaymentCompleted) appended.event();
+      assertThat(event.getOrderId()).isEqualTo("order-1");
+      assertThat(event.getPaymentId()).isEqualTo(PAYMENT_ID.toString());
+      assertThat(event.getAmountMinor()).isEqualTo(2000L);
+    }
+
+    @Test
+    @DisplayName("실패 금액과 다르면 성공 처리된다")
+    void failInjectionDoesNotMatchOtherAmounts() {
+      simulation.setFailForAmount(999L);
+
+      service.process(command());
+
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.topic()).isEqualTo("payment.completed");
+      assertThat(appended.aggregateType()).isEqualTo("Payment");
+      assertThat(appended.aggregateId()).isEqualTo("order-1");
+      assertThat(appended.partitionKey()).isEqualTo("order-1");
+      assertThat(appended.event()).isInstanceOf(PaymentCompleted.class);
+    }
   }
 
-  @Test
-  @DisplayName("실패 주입: 해당 금액 → FAILED 저장 + payment.failed 적재")
-  void failureInjected() {
-    simulation.setFailForAmount(2000L);
+  @Nested
+  @DisplayName("결제 실패 주입 경로")
+  class 결제실패주입 {
 
-    service.process(command());
+    @Test
+    @DisplayName("실패 주입: 해당 금액 → FAILED 저장 + payment.failed 적재")
+    void failureInjected() {
+      simulation.setFailForAmount(2000L);
 
-    assertThat(savePaymentPort.single().getStatus()).isEqualTo(PaymentStatus.FAILED);
+      service.process(command());
 
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.aggregateType()).isEqualTo("Payment");
-    assertThat(appended.aggregateId()).isEqualTo("order-1");
-    assertThat(appended.topic()).isEqualTo("payment.failed");
-    assertThat(appended.partitionKey()).isEqualTo("order-1");
-    assertThat(appended.event()).isInstanceOf(PaymentFailed.class);
-    assertThat(((PaymentFailed) appended.event()).getReason()).isNotBlank();
-  }
+      assertThat(savePaymentPort.single().getStatus()).isEqualTo(PaymentStatus.FAILED);
 
-  @Test
-  @DisplayName("실패 금액과 다르면 성공 처리된다")
-  void failInjectionDoesNotMatchOtherAmounts() {
-    simulation.setFailForAmount(999L);
-
-    service.process(command());
-
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.topic()).isEqualTo("payment.completed");
-    assertThat(appended.aggregateType()).isEqualTo("Payment");
-    assertThat(appended.aggregateId()).isEqualTo("order-1");
-    assertThat(appended.partitionKey()).isEqualTo("order-1");
-    assertThat(appended.event()).isInstanceOf(PaymentCompleted.class);
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.aggregateType()).isEqualTo("Payment");
+      assertThat(appended.aggregateId()).isEqualTo("order-1");
+      assertThat(appended.topic()).isEqualTo("payment.failed");
+      assertThat(appended.partitionKey()).isEqualTo("order-1");
+      assertThat(appended.event()).isInstanceOf(PaymentFailed.class);
+      assertThat(((PaymentFailed) appended.event()).getReason()).isNotBlank();
+    }
   }
 }

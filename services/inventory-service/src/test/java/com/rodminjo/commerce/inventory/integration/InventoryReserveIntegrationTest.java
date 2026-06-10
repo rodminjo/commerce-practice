@@ -29,15 +29,15 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Docker-free in→out integration test for the inventory service: produce an Order event to Kafka,
- * let the real {@code @KafkaListener} run the use case against a real embedded Postgres (Zonky),
- * and assert the atomic reservation side effects + the outbox event it appends.
+ * Docker 없는 인→아웃 통합 테스트: Order 이벤트를 Kafka에 발행하고, 실제 {@code @KafkaListener}가 Zonky 임베디드 Postgres에서
+ * 유스케이스를 실행한 뒤 원자적 예약 사이드이펙트 + 아웃박스 이벤트를 검증.
  */
 @SpringBootTest
 @EmbeddedKafka(
     topics = {"order.placed", "order.cancelled", "inventory.reserved", "inventory.released"},
     partitions = 1,
     bootstrapServersProperty = "spring.kafka.bootstrap-servers")
+@DisplayName("재고 서비스 통합 테스트 (Kafka + Postgres)")
 class InventoryReserveIntegrationTest {
 
   private static final String MOCK_REGISTRY = "mock://inventory-test";

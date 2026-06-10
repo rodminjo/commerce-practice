@@ -26,9 +26,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * Verifies JPA auditing on {@code BaseEntity}: created/updated timestamps and actors are filled
- * automatically on insert, falling back to {@code "SYSTEM"} when there is no authenticated actor
- * (this test runs without a SecurityContext). Docker-free: real embedded Postgres (Zonky).
+ * {@code BaseEntity} JPA 감사 필드 검증: 삽입 시 생성/수정 타임스탬프와 액터가 자동 채워지며, 인증 액터 없을 때(SecurityContext 미설정)
+ * {@code "SYSTEM"}으로 폴백. Docker 불필요: Zonky 임베디드 Postgres 사용.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -61,7 +60,7 @@ class AuditFieldsTest {
     }
   }
 
-  // No-op so the order commits; we only care about audit columns here.
+  // 주문 커밋 허용용 No-op; 감사 컬럼만 검증.
   @MockitoBean private OutboxAppender outboxAppender;
 
   @Autowired private PlaceOrderUseCase placeOrderUseCase;
@@ -71,8 +70,7 @@ class AuditFieldsTest {
   @Autowired private OrderItemJpaRepository orderItemJpaRepository;
 
   @Test
-  @DisplayName(
-      "Audit fields auto-populate on insert; actor falls back to SYSTEM when unauthenticated")
+  @DisplayName("삽입 시 감사 필드 자동 채움; 비인증 시 액터 SYSTEM 폴백")
   void auditFieldsPopulatedWithSystemFallback() {
     PlaceOrderCommand cmd =
         new PlaceOrderCommand(
@@ -81,9 +79,9 @@ class AuditFieldsTest {
     UUID orderId = placeOrderUseCase.place(cmd).orderId();
 
     OrderJpaEntity order = orderJpaRepository.findById(orderId).orElseThrow();
-    // Business creation time (domain-owned) is persisted and restored.
+    // 도메인 소유 비즈니스 생성 시각 — 영속화 후 복원됨.
     assertThat(order.getCreatedAt()).isNotNull();
-    // Audit columns auto-populate; actor falls back to SYSTEM (unauthenticated).
+    // 감사 컬럼 자동 채움; 비인증 시 액터는 SYSTEM으로 폴백.
     assertThat(order.getAuditCreatedAt()).isNotNull();
     assertThat(order.getAuditUpdatedAt()).isNotNull();
     assertThat(order.getAuditCreatedBy()).isEqualTo(SecurityAuditorAware.SYSTEM);

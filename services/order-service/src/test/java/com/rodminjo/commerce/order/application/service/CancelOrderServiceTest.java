@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class CancelOrderServiceTest {
@@ -48,45 +49,55 @@ class CancelOrderServiceTest {
         NOW);
   }
 
-  @Test
-  @DisplayName("PENDING 주문 취소 → CANCELLED + order.cancelled 적재")
-  void cancelPendingOrder() {
-    orderStateRepository.seed(orderWith(OrderStatus.PENDING));
+  @Nested
+  @DisplayName("정상 취소")
+  class SuccessfulCancellation {
 
-    service.cancel(new CancelOrderCommand(ORDER_ID, "changed-mind"));
+    @Test
+    @DisplayName("PENDING 주문 취소 → CANCELLED + order.cancelled 적재")
+    void cancelPendingOrder() {
+      orderStateRepository.seed(orderWith(OrderStatus.PENDING));
 
-    Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
-    assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.aggregateType()).isEqualTo("Order");
-    assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
-    assertThat(appended.topic()).isEqualTo("order.cancelled");
-    assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
-    assertThat(((OrderCancelled) appended.event()).getReason()).isEqualTo("changed-mind");
+      service.cancel(new CancelOrderCommand(ORDER_ID, "changed-mind"));
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.aggregateType()).isEqualTo("Order");
+      assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
+      assertThat(appended.topic()).isEqualTo("order.cancelled");
+      assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
+      assertThat(((OrderCancelled) appended.event()).getReason()).isEqualTo("changed-mind");
+    }
   }
 
-  @Test
-  @DisplayName("존재하지 않는 주문 → ORDER_NOT_FOUND")
-  void cancelMissingOrder() {
-    assertThatThrownBy(() -> service.cancel(new CancelOrderCommand(ORDER_ID, "x")))
-        .isInstanceOf(DomainException.class)
-        .extracting(e -> ((DomainException) e).errorCode())
-        .isEqualTo(OrderErrorCode.ORDER_NOT_FOUND);
-  }
+  @Nested
+  @DisplayName("취소 실패 — 도메인/조회 오류")
+  class CancellationFailure {
 
-  @Test
-  @DisplayName("COMPLETED 주문 취소 시도 → INVALID_STATE_TRANSITION (도메인 가드)")
-  void cancelCompletedOrderRejected() {
-    orderStateRepository.seed(orderWith(OrderStatus.COMPLETED));
+    @Test
+    @DisplayName("존재하지 않는 주문 → ORDER_NOT_FOUND")
+    void cancelMissingOrder() {
+      assertThatThrownBy(() -> service.cancel(new CancelOrderCommand(ORDER_ID, "x")))
+          .isInstanceOf(DomainException.class)
+          .extracting(e -> ((DomainException) e).errorCode())
+          .isEqualTo(OrderErrorCode.ORDER_NOT_FOUND);
+    }
 
-    assertThatThrownBy(() -> service.cancel(new CancelOrderCommand(ORDER_ID, "x")))
-        .isInstanceOf(DomainException.class)
-        .extracting(e -> ((DomainException) e).errorCode())
-        .isEqualTo(OrderErrorCode.INVALID_STATE_TRANSITION);
+    @Test
+    @DisplayName("COMPLETED 주문 취소 시도 → INVALID_STATE_TRANSITION (도메인 가드)")
+    void cancelCompletedOrderRejected() {
+      orderStateRepository.seed(orderWith(OrderStatus.COMPLETED));
 
-    Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
-    assertThat(stored.getStatus()).isEqualTo(OrderStatus.COMPLETED);
-    assertThat(outboxAppender.appended()).isEmpty();
+      assertThatThrownBy(() -> service.cancel(new CancelOrderCommand(ORDER_ID, "x")))
+          .isInstanceOf(DomainException.class)
+          .extracting(e -> ((DomainException) e).errorCode())
+          .isEqualTo(OrderErrorCode.INVALID_STATE_TRANSITION);
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+      assertThat(outboxAppender.appended()).isEmpty();
+    }
   }
 }

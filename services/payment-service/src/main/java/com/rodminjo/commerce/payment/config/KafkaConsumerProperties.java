@@ -7,8 +7,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Binds the subset of {@code spring.kafka.*} the inbound Protobuf consumer factory needs — a
- * dedicated, type-safe properties object instead of scattered {@code @Value}s.
+ * 인바운드 Protobuf 컨슈머 팩토리에 필요한 {@code spring.kafka.*} 하위 속성 바인딩. 분산된 {@code @Value} 대신 타입 안전한 전용 프로퍼티
+ * 객체로 관리.
  */
 @Getter
 @Setter

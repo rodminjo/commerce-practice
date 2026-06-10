@@ -5,6 +5,6 @@ public interface ErrorCode {
 
   String defaultMessage();
 
-  /** Abstract meaning of this error; the web adapter maps it to an HTTP status. */
+  /** 에러의 추상적 의미. 웹 어댑터가 HTTP 상태 코드로 변환. */
   ErrorType type();
 }

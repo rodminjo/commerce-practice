@@ -22,15 +22,14 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Regression guard for the outbox relay self-invocation bug. Previously {@code OutboxRelay.poll()}
- * called {@code this.publishBatch()} on the same bean, so the call bypassed the Spring proxy, no
- * transaction ran, {@code markPublished()} never flushed, and the row stayed PENDING — re-published
- * on every poll. The scheduling trigger now lives in {@link OutboxRelayScheduler} (a separate
- * bean), so driving {@code poll()} crosses the proxy and the {@code @Transactional} advice applies.
+ * outbox 릴레이 자기 호출 버그 회귀 방지 테스트. 과거 {@code OutboxRelay.poll()}이 동일 빈의 {@code this.publishBatch()}를
+ * 호출하여 Spring 프록시를 우회, 트랜잭션 미실행, {@code markPublished()} 미플러시, 행이 PENDING 유지 — 매 폴마다 재발행. 스케줄 트리거가
+ * 현재 {@link OutboxRelayScheduler}(별도 빈)에 위치하여 {@code poll()} 호출이 프록시를 경유하고 {@code @Transactional}
+ * 어드바이스가 적용됨.
  *
- * <p>Lives in its own class (own context + embedded Postgres + Kafka broker) so its extra publish
- * does not pollute the shared {@code order.placed} topic that {@code OutboxRelayIntegrationTest}
- * asserts exact record counts on. Docker-free: Zonky embedded Postgres + {@code @EmbeddedKafka}.
+ * <p>독립 클래스(자체 컨텍스트 + 임베디드 Postgres + Kafka)로 분리하여 추가 발행이 {@code OutboxRelayIntegrationTest}의 정확한
+ * {@code order.placed} 토픽 카운트 단언을 오염시키지 않도록 방지. Docker 불필요: Zonky 임베디드 Postgres +
+ * {@code @EmbeddedKafka}.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -50,7 +49,7 @@ class OutboxSchedulerIntegrationTest {
     registry.add("spring.datasource.password", () -> "postgres");
     registry.add("spring.flyway.create-schemas", () -> "true");
     registry.add("spring.kafka.properties.schema.registry.url", () -> "mock://order-test");
-    // Disable the real scheduled cadence — we drive poll() manually.
+    // 실제 스케줄 주기 비활성화 — poll()을 수동 구동.
     registry.add("outbox.relay.poll-interval-ms", () -> "3600000");
     registry.add(
         "spring.security.oauth2.resourceserver.jwt.issuer-uri",
@@ -71,22 +70,22 @@ class OutboxSchedulerIntegrationTest {
   @Autowired private OutboxTestRepository outboxRepository;
 
   @Test
-  @DisplayName("scheduler.poll() crosses the proxy → @Transactional applies, row marked PUBLISHED")
+  @DisplayName("scheduler.poll()이 프록시 경유 → @Transactional 적용, 행이 PUBLISHED로 마킹됨")
   void scheduledPoll_appliesTransaction_andMarksPublished() {
     PlaceOrderCommand cmd =
         new PlaceOrderCommand(
             "customer-scheduler-1", List.of(new OrderItemCommand("prod-1", 1, 700L)), "KRW");
     UUID orderId = placeOrderUseCase.place(cmd).orderId();
 
-    // sanity: appended PENDING in place()'s own transaction
+    // sanity: place()의 자체 트랜잭션에서 PENDING으로 적재됨
     assertThat(outboxRepository.findByAggregateId(orderId.toString()))
         .singleElement()
         .satisfies(e -> assertThat(e.getStatus()).isEqualTo(OutboxStatus.PENDING));
 
-    // production path: scheduler bean → relay bean → proxy → @Transactional publishBatch()
+    // 프로덕션 경로: 스케줄러 빈 → 릴레이 빈 → 프록시 → @Transactional publishBatch()
     outboxRelayScheduler.poll();
 
-    // with the old self-invocation the row would still be PENDING here
+    // 구 자기 호출 방식이었다면 여기서 행이 여전히 PENDING 상태일 것
     OutboxEvent afterPoll = outboxRepository.findByAggregateId(orderId.toString()).get(0);
     assertThat(afterPoll.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
     assertThat(afterPoll.getPublishedAt()).isNotNull();

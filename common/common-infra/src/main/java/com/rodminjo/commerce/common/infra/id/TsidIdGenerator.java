@@ -4,10 +4,7 @@ import com.rodminjo.commerce.common.id.IdGenerator;
 import io.hypersistence.tsid.TSID;
 import org.springframework.stereotype.Component;
 
-/**
- * TSID (time-sorted) long id strategy — for entities that don't need a UUID and benefit from
- * sortable, index-friendly keys. 64-bit, monotonic-ish, distributed-safe.
- */
+/** TSID 기반 Long ID 전략. UUID 불필요, 정렬·인덱스 친화적 키가 필요한 엔티티용. 64비트, 단조 증가, 분산 환경 안전. */
 @Component
 public class TsidIdGenerator implements IdGenerator<Long> {
 

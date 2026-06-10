@@ -28,23 +28,18 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Proves the multi-instance relay guarantee from {@code 01-transactional-outbox.md} §3.3: the
- * {@code FOR UPDATE SKIP LOCKED} query lets two relays poll the outbox concurrently and each grabs
- * a <em>disjoint</em> set of PENDING rows — never the same row twice (no duplicate publish).
+ * 멀티 인스턴스 릴레이 보장 검증({@code 01-transactional-outbox.md} §3.3): {@code FOR UPDATE SKIP LOCKED} 쿼리로 두
+ * 릴레이가 동시에 outbox를 폴링할 때 각각 <em>서로 다른</em> PENDING 행 집합을 획득 — 동일 행 중복 발행 없음.
  *
- * <p>This is the race condition the production query exists to prevent, and the only test that
- * genuinely exercises it: {@link OutboxRelayIntegrationTest} runs {@code publishBatch()} single
- * threaded, so {@code SKIP LOCKED} never contends there and dropping the clause would not fail it.
- * Here two transactions overlap on purpose: relay A locks the oldest batch and holds its
- * transaction open while relay B polls. With {@code SKIP LOCKED} present, B skips A's locked rows
- * and proceeds immediately with the next batch (assertion below). Without it, B would block on A's
- * row locks until A commits — A only commits after B finishes, so the two deadlock and the test
- * times out. Either way, removing {@code SKIP LOCKED} fails this test.
+ * <p>프로덕션 쿼리가 방지하는 경쟁 조건이며 이를 실제로 검증하는 유일한 테스트: {@link OutboxRelayIntegrationTest}는 {@code
+ * publishBatch()}를 단일 스레드로 실행하므로 {@code SKIP LOCKED}가 경합하지 않아 해당 절을 제거해도 실패하지 않음. 여기서는 두 트랜잭션을
+ * 의도적으로 겹침: 릴레이 A가 최오래된 배치를 잠그고 트랜잭션을 열어둔 채 B가 폴링. {@code SKIP LOCKED} 존재 시 B는 A의 잠긴 행을 건너뛰고 즉시 다음
+ * 배치를 처리(아래 단언). 없으면 B가 A의 행 잠금 해제 때까지 블록 — A는 B 완료 후에야 커밋하므로 데드락 및 타임아웃 발생. 어느 쪽이든 {@code SKIP
+ * LOCKED} 제거 시 이 테스트 실패.
  *
- * <p>Lives in its own class (own context + embedded Postgres + Kafka broker) so the seeded PENDING
- * rows it leaves behind do not pollute the exact outbox/topic counts that {@link
- * OutboxRelayIntegrationTest} asserts. Docker-free: Zonky embedded Postgres +
- * {@code @EmbeddedKafka}.
+ * <p>독립 클래스(자체 컨텍스트 + 임베디드 Postgres + Kafka)로 분리하여 시드된 PENDING 행이 {@link
+ * OutboxRelayIntegrationTest}의 정확한 outbox/토픽 카운트 단언을 오염시키지 않도록 방지. Docker 불필요: Zonky 임베디드 Postgres
+ * + {@code @EmbeddedKafka}.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -64,7 +59,7 @@ class OutboxConcurrencyIntegrationTest {
     registry.add("spring.datasource.password", () -> "postgres");
     registry.add("spring.flyway.create-schemas", () -> "true");
     registry.add("spring.kafka.properties.schema.registry.url", () -> "mock://order-test");
-    // Disable scheduled polling — we drive the locking query manually in two threads.
+    // 스케줄 폴링 비활성화 — 잠금 쿼리를 두 스레드에서 수동 구동.
     registry.add("outbox.relay.poll-interval-ms", () -> "3600000");
     registry.add(
         "spring.security.oauth2.resourceserver.jwt.issuer-uri",
@@ -85,11 +80,10 @@ class OutboxConcurrencyIntegrationTest {
   @Autowired private PlatformTransactionManager transactionManager;
 
   @Test
-  @DisplayName(
-      "FOR UPDATE SKIP LOCKED: two concurrent relays lock disjoint PENDING batches (no double publish)")
+  @DisplayName("FOR UPDATE SKIP LOCKED: 동시 릴레이 2개가 서로 다른 PENDING 배치를 잠금 (중복 발행 없음)")
   void skipLocked_concurrentRelays_grabDisjointRows() throws Exception {
-    // Seed 4 PENDING rows with strictly increasing created_at so ORDER BY created_at is
-    // deterministic (oldest first). limit=2 means each relay claims a 2-row batch.
+    // created_at 단조 증가로 PENDING 행 4개 시드 — ORDER BY created_at 결정론적(가장 오래된 순).
+    // limit=2이므로 각 릴레이가 2행 배치를 획득.
     Instant base = Instant.parse("2024-01-01T00:00:00Z");
     List<UUID> seededIds = new ArrayList<>();
     for (int i = 0; i < 4; i++) {
@@ -107,8 +101,8 @@ class OutboxConcurrencyIntegrationTest {
               base.plusSeconds(i)));
     }
 
-    // Relay A locks first and HOLDS its transaction open until B has run its own locking query,
-    // guaranteeing the two queries genuinely overlap (A's lock is live while B polls).
+    // 릴레이 A가 먼저 잠금 후 B의 잠금 쿼리 실행 완료까지 트랜잭션 유지 —
+    // 두 쿼리가 진정으로 겹치도록 보장(A의 잠금이 B 폴링 중 유효).
     CountDownLatch aHasLocked = new CountDownLatch(1);
     CountDownLatch bHasLocked = new CountDownLatch(1);
 
@@ -123,7 +117,7 @@ class OutboxConcurrencyIntegrationTest {
                       status -> {
                         List<UUID> ids = lockedIds(outboxRepository.lockPendingBatch(2));
                         aHasLocked.countDown();
-                        // Hold the transaction (and the row locks) open while B polls.
+                        // B 폴링 중 트랜잭션(및 행 잠금) 유지.
                         awaitOrFail(bHasLocked, "B never finished its locking query");
                         return ids;
                       }));
@@ -134,7 +128,7 @@ class OutboxConcurrencyIntegrationTest {
                 awaitOrFail(aHasLocked, "A never acquired its lock");
                 return txTemplate.execute(
                     status -> {
-                      // SKIP LOCKED → returns the rows A did NOT lock, without blocking.
+                      // SKIP LOCKED → A가 잠그지 않은 행을 블로킹 없이 반환.
                       List<UUID> ids = lockedIds(outboxRepository.lockPendingBatch(2));
                       bHasLocked.countDown();
                       return ids;
@@ -144,12 +138,12 @@ class OutboxConcurrencyIntegrationTest {
       List<UUID> aIds = relayA.get(20, TimeUnit.SECONDS);
       List<UUID> bIds = relayB.get(20, TimeUnit.SECONDS);
 
-      // Each relay claimed its own 2-row batch...
+      // 각 릴레이가 자신의 2행 배치를 획득...
       assertThat(aIds).hasSize(2);
       assertThat(bIds).hasSize(2);
-      // ...and the batches are disjoint — no row was handed to both relays (the core guarantee).
+      // ...배치는 서로 다름 — 동일 행이 두 릴레이 모두에 전달되지 않음(핵심 보장).
       assertThat(aIds).doesNotContainAnyElementsOf(bIds);
-      // Together they cover all 4 seeded PENDING rows.
+      // 합산하면 시드된 PENDING 행 4개를 모두 포함.
       assertThat(Stream.concat(aIds.stream(), bIds.stream()).toList())
           .containsExactlyInAnyOrderElementsOf(seededIds);
     } finally {

@@ -9,8 +9,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Inbound adapter feeding the Saga orchestrator. One listener per consumed event type, each bound
- * to a type-specific container factory so the Protobuf payload deserializes to the concrete class.
+ * Saga 오케스트레이터에 이벤트를 전달하는 인바운드 어댑터. 소비 이벤트 타입별 리스너 1개씩 등록하며, 타입 전용 컨테이너 팩토리를 통해 Protobuf 페이로드를 구체
+ * 클래스로 역직렬화.
  */
 @RequiredArgsConstructor
 @Component

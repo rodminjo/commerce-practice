@@ -37,10 +37,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Docker-free in→out integration test for the Order Saga orchestrator. Drives the order through the
- * inbound saga events (inventory.reserved / payment.completed / payment.failed) and the cancel use
- * case against real embedded Postgres (Zonky) + in-JVM Kafka, asserting the resulting order state
- * transitions and the compensation/forward events appended to the outbox.
+ * Order Saga 오케스트레이터 인→아웃 통합 테스트(Docker 불필요). 인바운드 Saga 이벤트(inventory.reserved / payment.completed
+ * / payment.failed) 및 취소 유스케이스를 실제 임베디드 Postgres(Zonky) + 인-JVM Kafka로 구동하여 결과 상태 전이 및 outbox에 적재된
+ * 보상/전진 이벤트를 검증.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -192,7 +191,7 @@ class OrderSagaIntegrationTest {
     send("payment.completed", orderId.toString(), completed);
     assertThat(awaitUntil(() -> statusOf(orderId) == OrderStatus.CONFIRMED)).isTrue();
 
-    // duplicate delivery must not flip or re-transition the order
+    // 중복 전달은 주문 상태를 변경하거나 재전이시키지 않아야 함
     send("payment.completed", orderId.toString(), completed);
     try {
       Thread.sleep(2_000);

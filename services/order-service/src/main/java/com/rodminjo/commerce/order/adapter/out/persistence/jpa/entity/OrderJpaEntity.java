@@ -52,7 +52,7 @@ public class OrderJpaEntity extends BaseEntity {
         id, customerId, status, domainItems, totalAmountMinor, currency, createdAt);
   }
 
-  /** Applies a status transition decided by the domain; JPA auditing stamps audit_updated_*. */
+  /** 도메인에서 결정된 상태 전이 적용. JPA 감사가 audit_updated_* 컬럼을 자동 갱신. */
   public void changeStatus(OrderStatus status) {
     this.status = status;
   }

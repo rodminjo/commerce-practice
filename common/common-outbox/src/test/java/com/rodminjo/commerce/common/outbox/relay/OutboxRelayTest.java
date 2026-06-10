@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 
+@DisplayName("OutboxRelay")
 @ExtendWith(MockitoExtension.class)
 class OutboxRelayTest {
 
@@ -58,48 +61,55 @@ class OutboxRelayTest {
         Instant.now());
   }
 
-  @Test
-  void publishBatch_sendsKafkaMessage_andMarksPublished() throws Exception {
-    // given
-    OutboxEvent event = buildPendingEvent();
-    when(outboxRepository.lockPendingBatch(anyInt())).thenReturn(List.of(event));
+  @Nested
+  @DisplayName("publishBatch 호출 시")
+  class PublishBatch {
 
-    // when
-    int count = relay.publishBatch();
+    @Test
+    @DisplayName("PENDING 이벤트 존재 → Kafka 전송 후 PUBLISHED 상태로 변경")
+    void publishBatch_sendsKafkaMessage_andMarksPublished() throws Exception {
+      // given
+      OutboxEvent event = buildPendingEvent();
+      when(outboxRepository.lockPendingBatch(anyInt())).thenReturn(List.of(event));
 
-    // then
-    assertThat(count).isEqualTo(1);
+      // when
+      int count = relay.publishBatch();
 
-    ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
-    verify(kafkaTemplate).send(topicCaptor.capture(), keyCaptor.capture(), valueCaptor.capture());
+      // then
+      assertThat(count).isEqualTo(1);
 
-    assertThat(topicCaptor.getValue()).isEqualTo("order.placed");
-    assertThat(keyCaptor.getValue()).isEqualTo("oid-1");
-    assertThat(valueCaptor.getValue()).isInstanceOf(DynamicMessage.class);
+      ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+      ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+      ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
+      verify(kafkaTemplate).send(topicCaptor.capture(), keyCaptor.capture(), valueCaptor.capture());
 
-    assertThat(event.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
-    assertThat(event.getPublishedAt()).isNotNull();
-  }
+      assertThat(topicCaptor.getValue()).isEqualTo("order.placed");
+      assertThat(keyCaptor.getValue()).isEqualTo("oid-1");
+      assertThat(valueCaptor.getValue()).isInstanceOf(DynamicMessage.class);
 
-  @Test
-  void publishBatch_whenNoPendingEvents_sendsNothing() throws Exception {
-    // given
-    OutboxEvent event = buildPendingEvent();
-    when(outboxRepository.lockPendingBatch(anyInt()))
-        .thenReturn(List.of(event))
-        .thenReturn(Collections.emptyList());
+      assertThat(event.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
+      assertThat(event.getPublishedAt()).isNotNull();
+    }
 
-    // first call publishes 1
-    relay.publishBatch();
-    verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any());
+    @Test
+    @DisplayName("PENDING 이벤트 없음 → Kafka 전송 없이 0 반환")
+    void publishBatch_whenNoPendingEvents_sendsNothing() throws Exception {
+      // given
+      OutboxEvent event = buildPendingEvent();
+      when(outboxRepository.lockPendingBatch(anyInt()))
+          .thenReturn(List.of(event))
+          .thenReturn(Collections.emptyList());
 
-    // second call finds nothing
-    int count = relay.publishBatch();
+      // 첫 번째 호출: 1건 발행
+      relay.publishBatch();
+      verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any());
 
-    assertThat(count).isEqualTo(0);
-    // still only 1 total send
-    verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any());
+      // 두 번째 호출: 대상 없음
+      int count = relay.publishBatch();
+
+      assertThat(count).isEqualTo(0);
+      // 총 전송 횟수는 여전히 1
+      verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any());
+    }
   }
 }

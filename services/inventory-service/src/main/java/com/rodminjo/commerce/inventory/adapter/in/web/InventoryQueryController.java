@@ -11,10 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Read endpoint for manual verification (E2E). A single lookup by primary key is a "simple read",
- * so it goes through JPA via the stock port rather than MyBatis.
- */
+/** E2E 수동 검증용 조회 엔드포인트. PK 단건 조회는 단순 읽기이므로 MyBatis 대신 JPA(stock port) 경유. */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/inventory")

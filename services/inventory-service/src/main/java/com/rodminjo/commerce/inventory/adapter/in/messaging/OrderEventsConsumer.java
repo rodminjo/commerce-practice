@@ -13,9 +13,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Inbound adapter: turns Order events into inventory use-case calls. Each listener uses a
- * type-specific container factory so the Protobuf deserializer yields the concrete event type
- * rather than a {@code DynamicMessage}.
+ * 인바운드 어댑터: Order 이벤트를 인벤토리 유스케이스 호출로 변환. 각 리스너는 타입별 컨테이너 팩토리를 사용하여 {@code
+ * KafkaProtobufDeserializer}가 {@code DynamicMessage} 대신 구체 이벤트 타입을 반환.
  */
 @RequiredArgsConstructor
 @Component

@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class PlaceOrderServiceTest {
@@ -45,45 +46,50 @@ class PlaceOrderServiceTest {
         "KRW");
   }
 
-  @Test
-  @DisplayName("place(): 생성된 id로 저장하고 그 orderId를 결과로 반환한다")
-  void place_savesAndReturnsGeneratedOrderId() {
-    PlaceOrderResult result = placeOrderService.place(command());
+  @Nested
+  @DisplayName("place() — 주문 생성 및 outbox 적재")
+  class Place {
 
-    assertThat(result.orderId()).isEqualTo(ORDER_ID);
-    assertThat(saveOrderPort.saved()).hasSize(1);
-    Order saved = saveOrderPort.saved().get(0);
-    assertThat(saved.getId()).isEqualTo(ORDER_ID);
-  }
+    @Test
+    @DisplayName("생성된 id로 저장하고 그 orderId를 결과로 반환한다")
+    void place_savesAndReturnsGeneratedOrderId() {
+      PlaceOrderResult result = placeOrderService.place(command());
 
-  @Test
-  @DisplayName("place(): OrderPlaced 이벤트가 모든 필드를 정확히 담아 outbox에 append된다")
-  void place_appendsOrderPlacedEventWithAllFields() {
-    placeOrderService.place(command());
+      assertThat(result.orderId()).isEqualTo(ORDER_ID);
+      assertThat(saveOrderPort.saved()).hasSize(1);
+      Order saved = saveOrderPort.saved().get(0);
+      assertThat(saved.getId()).isEqualTo(ORDER_ID);
+    }
 
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.aggregateType()).isEqualTo("Order");
-    assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
-    assertThat(appended.topic()).isEqualTo("order.placed");
-    assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
+    @Test
+    @DisplayName("OrderPlaced 이벤트가 모든 필드를 정확히 담아 outbox에 append된다")
+    void place_appendsOrderPlacedEventWithAllFields() {
+      placeOrderService.place(command());
 
-    assertThat(appended.event()).isInstanceOf(OrderPlaced.class);
-    OrderPlaced event = (OrderPlaced) appended.event();
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.aggregateType()).isEqualTo("Order");
+      assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
+      assertThat(appended.topic()).isEqualTo("order.placed");
+      assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
 
-    assertThat(event.getOrderId()).isEqualTo(ORDER_ID.toString());
-    assertThat(event.getCustomerId()).isEqualTo("customer-1");
-    assertThat(event.getCurrency()).isEqualTo("KRW");
-    assertThat(event.getTotalAmountMinor()).isEqualTo(2000L); // 2*500 + 1*1000
-    assertThat(event.getOccurredAt().getSeconds()).isEqualTo(FIXED_NOW.getEpochSecond());
-    assertThat(event.getOccurredAt().getNanos()).isEqualTo(FIXED_NOW.getNano());
+      assertThat(appended.event()).isInstanceOf(OrderPlaced.class);
+      OrderPlaced event = (OrderPlaced) appended.event();
 
-    assertThat(event.getItemsList()).hasSize(2);
-    assertThat(event.getItems(0).getProductId()).isEqualTo("p1");
-    assertThat(event.getItems(0).getQuantity()).isEqualTo(2);
-    assertThat(event.getItems(0).getUnitPriceMinor()).isEqualTo(500L);
-    assertThat(event.getItems(1).getProductId()).isEqualTo("p2");
-    assertThat(event.getItems(1).getQuantity()).isEqualTo(1);
-    assertThat(event.getItems(1).getUnitPriceMinor()).isEqualTo(1000L);
+      assertThat(event.getOrderId()).isEqualTo(ORDER_ID.toString());
+      assertThat(event.getCustomerId()).isEqualTo("customer-1");
+      assertThat(event.getCurrency()).isEqualTo("KRW");
+      assertThat(event.getTotalAmountMinor()).isEqualTo(2000L); // 2*500 + 1*1000
+      assertThat(event.getOccurredAt().getSeconds()).isEqualTo(FIXED_NOW.getEpochSecond());
+      assertThat(event.getOccurredAt().getNanos()).isEqualTo(FIXED_NOW.getNano());
+
+      assertThat(event.getItemsList()).hasSize(2);
+      assertThat(event.getItems(0).getProductId()).isEqualTo("p1");
+      assertThat(event.getItems(0).getQuantity()).isEqualTo(2);
+      assertThat(event.getItems(0).getUnitPriceMinor()).isEqualTo(500L);
+      assertThat(event.getItems(1).getProductId()).isEqualTo("p2");
+      assertThat(event.getItems(1).getQuantity()).isEqualTo(1);
+      assertThat(event.getItems(1).getUnitPriceMinor()).isEqualTo(1000L);
+    }
   }
 }

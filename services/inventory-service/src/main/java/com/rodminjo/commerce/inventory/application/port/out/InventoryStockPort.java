@@ -3,9 +3,8 @@ package com.rodminjo.commerce.inventory.application.port.out;
 import java.util.Optional;
 
 /**
- * Stock write/read seam. {@link #reserve} and {@link #release} are the atomic conditional UPDATEs
- * (the oversell guard) and return the number of affected rows — {@code 0} means the condition
- * failed (insufficient stock / nothing to release).
+ * 재고 쓰기/읽기 포트. {@link #reserve}와 {@link #release}는 원자적 조건부 UPDATE(초과판매 방지)이며 영향 행 수를 반환. {@code 0}은
+ * 조건 불충족(재고 부족 또는 복구 대상 없음)을 의미.
  */
 public interface InventoryStockPort {
 

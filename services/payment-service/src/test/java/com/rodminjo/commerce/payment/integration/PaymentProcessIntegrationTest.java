@@ -29,10 +29,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Docker-free in→out integration test for the payment service: produce {@code payment.requested},
- * let the real listener process it (Zonky Postgres), and assert the persisted payment + outbox
- * event. The fail-injection switch ({@code payment.simulate.fail-for-amount}) is wired to a
- * sentinel amount so a single context exercises both the success and failure branches.
+ * Docker 없는 payment-service 인→아웃 통합 테스트. {@code payment.requested} 발행 후 실제 리스너(Zonky Postgres)가
+ * 처리하도록 하고, 저장된 결제 및 outbox 이벤트를 단언. {@code payment.simulate.fail-for-amount} 스위치를 고정 금액에 연결해 단일
+ * 컨텍스트에서 성공/실패 경로를 모두 검증.
  */
 @SpringBootTest
 @EmbeddedKafka(

@@ -9,13 +9,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Test data builders for the Order aggregate and its inbound {@link PlaceOrderCommand}.
+ * Order 애그리거트 및 {@link PlaceOrderCommand} 테스트 데이터 빌더.
  *
- * <p>Defaults produce a valid PENDING order; a test overrides only the field it cares about (e.g.
- * {@code OrderFixture.anOrder().currency("USD").build()}).
+ * <p>기본값은 유효한 PENDING 주문을 생성하며, 테스트는 관심 있는 필드만 오버라이드 (예: {@code
+ * OrderFixture.anOrder().currency("USD").build()}).
  *
- * <p>Do NOT route invalid-input cases (null/blank/bad currency) through here — pass those args
- * inline at the call site so the offending value stays visible in the test.
+ * <p>유효하지 않은 입력(null/blank/잘못된 currency) 케이스는 여기를 통하지 말고 테스트 호출부에서 직접 전달 — 문제 값이 코드상 명확히 드러나도록 유지.
  */
 public final class OrderFixture {
 
@@ -26,12 +25,12 @@ public final class OrderFixture {
 
   private OrderFixture() {}
 
-  /** A single valid line item: 1 x {@value #DEFAULT_PRODUCT_ID} @ 1000. */
+  /** 기본 라인 아이템: {@value #DEFAULT_PRODUCT_ID} 1개 @ 1000. */
   public static OrderLineItem lineItem() {
     return OrderLineItem.of(DEFAULT_PRODUCT_ID, 1, 1000L);
   }
 
-  /** A valid PENDING {@link Order} with default fields. */
+  /** 기본 필드로 구성된 유효한 PENDING {@link Order}. */
   public static Order order() {
     return anOrder().build();
   }
@@ -40,7 +39,7 @@ public final class OrderFixture {
     return new OrderBuilder();
   }
 
-  /** A valid {@link PlaceOrderCommand} with default fields. */
+  /** 기본 필드로 구성된 유효한 {@link PlaceOrderCommand}. */
   public static PlaceOrderCommand placeOrderCommand() {
     return aPlaceOrderCommand().build();
   }
@@ -107,7 +106,7 @@ public final class OrderFixture {
       return this;
     }
 
-    /** Replace the line items with a single item. */
+    /** 라인 아이템을 단일 아이템으로 교체. */
     public PlaceOrderCommandBuilder item(String productId, int quantity, long unitPriceMinor) {
       this.items = List.of(new OrderItemCommand(productId, quantity, unitPriceMinor));
       return this;

@@ -19,10 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Reserves stock for an order placed upstream. Each line is reserved with an atomic conditional
- * UPDATE ({@code stock - reserved >= qty}); an affected-row count of 0 means insufficient stock and
- * rolls the whole multi-item reservation back (all-or-nothing). On full success it appends an
- * {@code InventoryReserved} event to the outbox in the same transaction.
+ * 상위 서비스에서 전달된 주문의 재고 예약. 각 라인을 원자적 조건부 UPDATE({@code stock - reserved >= qty})로 처리. 영향 행 0 = 재고 부족
+ * → 전체 롤백(전-또는-전무). 전 품목 성공 시 동일 트랜잭션 내 {@code InventoryReserved} 아웃박스 적재.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -37,8 +35,7 @@ public class ReserveStockService implements ReserveStockUseCase {
   @Override
   @Transactional
   public void reserve(ReserveStockCommand command) {
-    // Partial idempotency guard (at-least-once): a redelivered order.placed must not
-    // double-reserve.
+    // 부분 멱등성 가드(at-least-once): order.placed 재전달 시 이중 예약 방지.
     if (!reservationPort.findActive(command.orderId()).isEmpty()) {
       log.info("Order {} already has active reservations; skipping reserve", command.orderId());
       return;

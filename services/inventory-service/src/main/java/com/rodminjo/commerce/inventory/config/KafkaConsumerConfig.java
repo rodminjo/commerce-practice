@@ -15,10 +15,10 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
 /**
- * One {@link ConcurrentKafkaListenerContainerFactory} per consumed Protobuf type. Each carries its
- * own {@code SPECIFIC_PROTOBUF_VALUE_TYPE} so {@code KafkaProtobufDeserializer} yields the concrete
- * generated class (not a {@code DynamicMessage}); listeners select their factory by name. Settings
- * come from {@link KafkaConsumerProperties} (bound from {@code spring.kafka.*}).
+ * 소비 Protobuf 타입별 {@link ConcurrentKafkaListenerContainerFactory} 등록. 각 팩토리에 {@code
+ * SPECIFIC_PROTOBUF_VALUE_TYPE} 설정 → {@code KafkaProtobufDeserializer}가 {@code DynamicMessage} 대신
+ * 구체 생성 클래스 반환. 리스너는 이름으로 팩토리 선택. 설정값은 {@link KafkaConsumerProperties}({@code spring.kafka.*}
+ * 바인딩)에서 로드.
  */
 @Configuration
 @EnableConfigurationProperties(KafkaConsumerProperties.class)

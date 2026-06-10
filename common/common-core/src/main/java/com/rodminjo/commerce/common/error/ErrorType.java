@@ -1,28 +1,25 @@
 package com.rodminjo.commerce.common.error;
 
 /**
- * Abstract meaning of an error — the core's framework-free notion of "what kind of failure this
- * is".
+ * 에러의 추상적 의미. 코어 레이어의 프레임워크 비의존 오류 분류.
  *
- * <p>Deliberately NOT an HTTP status. The web adapter ({@code common-infra}) translates each type
- * to an {@code HttpStatus}; other entry points (gRPC, messaging) may translate it their own way.
- * This keeps the domain/application layers free of any web/HTTP dependency.
+ * <p>HTTP 상태 코드가 아님. 웹 어댑터({@code common-infra})가 {@code HttpStatus}로 변환하며, gRPC·메시징 등 다른 진입점은 각자의
+ * 방식으로 변환. 도메인·애플리케이션 레이어를 웹/HTTP 의존에서 분리.
  *
- * <p>Many domain {@link ErrorCode}s may share one type (HTTP has ~6 statuses, domains have many
- * codes).
+ * <p>다수의 도메인 {@link ErrorCode}가 하나의 타입을 공유 가능.
  */
 public enum ErrorType {
 
-  /** Invalid input or state. → 400 */
+  /** 잘못된 입력 또는 상태. → 400 */
   INVALID,
-  /** Not authenticated. → 401 */
+  /** 미인증. → 401 */
   UNAUTHORIZED,
-  /** Authenticated but not permitted. → 403 */
+  /** 인증됐으나 권한 없음. → 403 */
   FORBIDDEN,
-  /** Resource does not exist. → 404 */
+  /** 리소스 없음. → 404 */
   NOT_FOUND,
-  /** Conflicts with the current state (already processed, illegal transition, ...). → 409 */
+  /** 현재 상태와 충돌(이미 처리됨, 잘못된 전이 등). → 409 */
   CONFLICT,
-  /** Server-side failure. → 500 */
+  /** 서버 측 오류. → 500 */
   INTERNAL
 }

@@ -7,10 +7,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Binds the subset of {@code spring.kafka.*} the inbound Protobuf consumer factories need. A
- * dedicated, type-safe properties object (rather than scattered {@code @Value}s) — it mirrors the
- * yaml shape so the schema-registry URL, bootstrap servers, and consumer group are read once and
- * shared by every per-type listener factory.
+ * 인바운드 Protobuf 컨슈머 팩토리에 필요한 {@code spring.kafka.*} 하위 설정 바인딩. 분산된 {@code @Value} 대신 타입 안전 프로퍼티 객체
+ * 사용. yaml 구조를 그대로 반영하여 schema-registry URL, bootstrap 서버, 컨슈머 그룹을 한 번 읽고 모든 타입별 팩토리에 공유.
  */
 @Getter
 @Setter

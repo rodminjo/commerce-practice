@@ -6,8 +6,8 @@ import java.util.UUID;
 import lombok.Getter;
 
 /**
- * Payment aggregate. Starts REQUESTED and moves once to a terminal COMPLETED or FAILED. The
- * idempotency key (= orderId for Week 3) is stored now; dedup on the key is Week 4.
+ * Payment 애그리거트. REQUESTED 상태로 시작하여 COMPLETED 또는 FAILED 종단 상태로 1회 전이. 멱등성 키(Week 3 기준 orderId)를 저장;
+ * 키 기반 중복 제거는 Week 4 구현 예정.
  */
 @Getter
 public class Payment {

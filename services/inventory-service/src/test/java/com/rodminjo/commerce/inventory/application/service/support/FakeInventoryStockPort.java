@@ -6,16 +6,15 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Behavior-true in-memory fake of {@link InventoryStockPort}. Models the atomic conditional UPDATE:
- * {@code reserve} succeeds (returns 1, increments reserved) only while {@code stock - reserved >=
- * qty}, otherwise returns 0; {@code release} returns 1 (decrements reserved, floored at 0) when the
- * product is known, else 0.
+ * {@link InventoryStockPort}의 동작 충실 인메모리 Fake. 원자적 조건부 UPDATE 모델링: {@code reserve}는 {@code stock -
+ * reserved >= qty}일 때만 성공(1 반환, reserved 증가), 아니면 0 반환. {@code release}는 상품이 존재하면 1 반환(reserved 감소,
+ * 최솟값 0), 존재하지 않으면 0 반환.
  */
 public class FakeInventoryStockPort implements InventoryStockPort {
 
   private final Map<String, int[]> stocks = new HashMap<>(); // productId -> [stock, reserved]
 
-  /** Arranges a product with the given total stock and currently reserved quantity. */
+  /** 지정 총 재고와 현재 예약 수량으로 상품 초기화. */
   public void seed(String productId, int stock, int reserved) {
     stocks.put(productId, new int[] {stock, reserved});
   }

@@ -16,10 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Compensation: releases the stock an order reserved when that order is cancelled (user cancel or
- * payment failure). Looks the reserved quantities up by orderId (the {@code order.cancelled} event
- * carries none), releases each atomically, marks the reservations RELEASED, and appends {@code
- * InventoryReleased}. Idempotent: an order with no active reservations is a no-op.
+ * 보상 서비스: 주문 취소(사용자 취소 또는 결제 실패) 시 예약 재고 복구. orderId로 예약 수량 조회({@code order.cancelled}에는 수량 미포함),
+ * 원자적 복구 후 예약을 RELEASED 처리하고 {@code InventoryReleased} 아웃박스 적재. 활성 예약 없으면 멱등 no-op.
  */
 @Slf4j
 @RequiredArgsConstructor

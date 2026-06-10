@@ -9,10 +9,8 @@ import org.springframework.data.repository.query.Param;
 public interface InventoryJpaRepository extends JpaRepository<InventoryJpaEntity, String> {
 
   /**
-   * Atomic conditional reservation — the oversell guard. Increments {@code reserved} only while
-   * enough free stock remains; the returned affected-row count is {@code 1} on success and {@code
-   * 0} when {@code stock - reserved < qty}. No separate lock needed (lock comparison ships in Week
-   * 5).
+   * 원자적 조건부 예약 — 초과판매 방지. 가용 재고({@code stock - reserved >= qty})가 충분할 때만 {@code reserved}를 증가. 성공 시
+   * 영향 행 {@code 1}, 조건 불충족(재고 부족) 시 {@code 0} 반환. 별도 잠금 불필요(Week 5에서 비교 예정).
    */
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(
@@ -22,7 +20,7 @@ public interface InventoryJpaRepository extends JpaRepository<InventoryJpaEntity
               + " WHERE product_id = :pid AND stock - reserved >= :qty")
   int reserveAtomic(@Param("pid") String productId, @Param("qty") int qty);
 
-  /** Atomic release: decrements {@code reserved}, never below 0. Affected rows: 1 on success. */
+  /** 원자적 복구: {@code reserved}를 감소(최솟값 0). 성공 시 영향 행 1. */
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(
       nativeQuery = true,

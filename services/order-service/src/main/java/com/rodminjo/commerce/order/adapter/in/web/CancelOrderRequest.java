@@ -1,4 +1,4 @@
 package com.rodminjo.commerce.order.adapter.in.web;
 
-/** Optional body for {@code POST /api/orders/{id}/cancel}; {@code reason} may be omitted. */
+/** {@code POST /api/orders/{id}/cancel} 요청 바디(선택). {@code reason} 생략 가능. */
 public record CancelOrderRequest(String reason) {}

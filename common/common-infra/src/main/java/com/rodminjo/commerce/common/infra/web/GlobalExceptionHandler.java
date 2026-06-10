@@ -24,12 +24,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 /**
- * Single place that turns exceptions into the standard {@link ErrorResponse}. Lives in {@code
- * common-infra} so every web service shares it via component scan — no per-service copy.
+ * 예외를 표준 {@link ErrorResponse}로 변환하는 단일 처리 지점. {@code common-infra}에 위치하여 컴포넌트 스캔으로 전 웹 서비스가 공유.
+ * 서비스별 복사본 불필요.
  *
- * <p>Only {@link DomainException} derives its status from {@link ErrorType}; framework exceptions
- * set their HTTP status directly and use {@link CommonErrorCode} purely for the response {@code
- * code}.
+ * <p>{@link DomainException}만 {@link ErrorType}으로 HTTP 상태 결정. 프레임워크 예외는 HTTP 상태 직접 지정, 응답 {@code
+ * code}에는 {@link CommonErrorCode} 사용.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -112,7 +111,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
-    // Hide internal details from the client; full stack trace stays in the server log.
+    // 클라이언트에 내부 상세 정보 노출 금지. 전체 스택 트레이스는 서버 로그에만 기록.
     log.error("Unhandled exception {}", request.getRequestURI(), ex);
     return build(
         HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_ERROR, List.of(), request);

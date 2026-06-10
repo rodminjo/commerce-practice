@@ -19,12 +19,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The Saga orchestrator (Order is the brain). Reacts to inventory/payment events and drives the
- * order forward (PENDING → CONFIRMED) or compensates (→ CANCELLED, which triggers stock release).
+ * Saga 오케스트레이터(Order가 두뇌 역할). 재고/결제 이벤트에 반응하여 주문을 전진(PENDING → CONFIRMED)하거나 보상(→ CANCELLED, 재고 해제
+ * 트리거)시킴.
  *
- * <p>Week-3 idempotency is <em>partial</em>: every handler is guarded by the state machine so a
- * late/duplicate event (at-least-once delivery) that would cause an illegal transition is ignored
- * rather than reapplied. Full dedup / idempotency keys land in Week 4.
+ * <p>Week-3 멱등성은 <em>부분적</em>: 각 핸들러는 상태 머신으로 보호되어 잘못된 전이를 유발하는 지연/중복 이벤트(최소 1회 전달)를 재적용 없이 무시. 완전한
+ * 중복 제거/멱등성 키는 Week 4에서 도입.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -35,7 +34,7 @@ public class OrderSagaService implements OrderSagaUseCase {
   private final OutboxAppender outboxAppender;
   private final ClockHolder clockHolder;
 
-  /** Inventory reserved → request payment for the order total. */
+  /** 재고 예약 완료 → 주문 총액 결제 요청. */
   @Override
   @Transactional
   public void onInventoryReserved(String orderId) {
@@ -55,7 +54,7 @@ public class OrderSagaService implements OrderSagaUseCase {
     outboxAppender.append("Order", orderId, "payment.requested", orderId, event);
   }
 
-  /** Payment completed → confirm the order. Late/duplicate events are ignored by the guard. */
+  /** 결제 완료 → 주문 확정. 지연/중복 이벤트는 상태 머신 가드가 무시. */
   @Override
   @Transactional
   public void onPaymentCompleted(String orderId) {
@@ -68,7 +67,7 @@ public class OrderSagaService implements OrderSagaUseCase {
     orderStateRepositoryPort.update(order);
   }
 
-  /** Payment failed → cancel the order and emit order.cancelled (compensation: stock release). */
+  /** 결제 실패 → 주문 취소 및 order.cancelled 발행(보상: 재고 해제). */
   @Override
   @Transactional
   public void onPaymentFailed(String orderId, String reason) {

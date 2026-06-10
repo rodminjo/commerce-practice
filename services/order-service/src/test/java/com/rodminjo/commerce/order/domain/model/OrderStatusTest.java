@@ -6,40 +6,37 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-/**
- * Locks the full order state machine. Every (from, to) pair is listed explicitly as the spec —
- * independent of the production transition map — so an accidental edit to either side is caught.
- */
+/** 전체 주문 상태 머신 잠금 테스트. 모든 (from, to) 쌍을 명세로 열거 — 프로덕션 전이 맵과 독립적으로 작성하여 어느 쪽을 실수로 수정해도 즉시 탐지. */
 class OrderStatusTest {
 
   @ParameterizedTest(name = "{0} -> {1} == {2}")
   @DisplayName("canTransitionTo(): 전체 상태 전이 매트릭스")
   @CsvSource({
-    // from PENDING
+    // PENDING 출발
     "PENDING,   PENDING,   false",
     "PENDING,   CONFIRMED, true",
     "PENDING,   COMPLETED, false",
     "PENDING,   CANCELLED, true",
     "PENDING,   REFUNDED,  false",
-    // from CONFIRMED
+    // CONFIRMED 출발
     "CONFIRMED, PENDING,   false",
     "CONFIRMED, CONFIRMED, false",
     "CONFIRMED, COMPLETED, true",
     "CONFIRMED, CANCELLED, true",
     "CONFIRMED, REFUNDED,  false",
-    // from COMPLETED
+    // COMPLETED 출발
     "COMPLETED, PENDING,   false",
     "COMPLETED, CONFIRMED, false",
     "COMPLETED, COMPLETED, false",
     "COMPLETED, CANCELLED, false",
     "COMPLETED, REFUNDED,  true",
-    // from CANCELLED (terminal)
+    // CANCELLED 출발 (종료 상태)
     "CANCELLED, PENDING,   false",
     "CANCELLED, CONFIRMED, false",
     "CANCELLED, COMPLETED, false",
     "CANCELLED, CANCELLED, false",
     "CANCELLED, REFUNDED,  false",
-    // from REFUNDED (terminal)
+    // REFUNDED 출발 (종료 상태)
     "REFUNDED,  PENDING,   false",
     "REFUNDED,  CONFIRMED, false",
     "REFUNDED,  COMPLETED, false",

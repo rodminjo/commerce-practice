@@ -25,9 +25,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * Proves the dual-write atomicity guarantee: when the outbox append fails, the order INSERT must
- * roll back too (both writes share one transaction). Docker-free: real embedded Postgres (Zonky).
- * Verification goes through JPA repositories, not raw SQL.
+ * 이중 쓰기 원자성 보장 검증: outbox 적재 실패 시 주문 INSERT도 함께 롤백(두 쓰기가 하나의 트랜잭션 공유). Docker 불필요: Zonky 임베디드
+ * Postgres. 검증은 raw SQL이 아닌 JPA 리포지토리를 통해 수행.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -69,7 +68,7 @@ class OutboxRollbackTest {
   @Autowired private OutboxTestRepository outboxRepository;
 
   @Test
-  @DisplayName("B: OutboxAppender throws → transaction rollback → no order and no outbox row")
+  @DisplayName("B: OutboxAppender 예외 → 트랜잭션 롤백 → 주문 및 outbox 행 미적재")
   void rollback_onOutboxFailure() {
     doThrow(new RuntimeException("simulated outbox failure"))
         .when(outboxAppender)
@@ -81,7 +80,7 @@ class OutboxRollbackTest {
 
     assertThatThrownBy(() -> placeOrderUseCase.place(cmd)).isInstanceOf(RuntimeException.class);
 
-    // Transaction rolled back — neither the order nor an outbox row was persisted.
+    // 트랜잭션 롤백 — 주문과 outbox 행 모두 미영속화.
     assertThat(orderJpaRepository.countByCustomerId("customer-rollback-1")).isZero();
     assertThat(outboxRepository.countByAggregateType("Order")).isZero();
   }

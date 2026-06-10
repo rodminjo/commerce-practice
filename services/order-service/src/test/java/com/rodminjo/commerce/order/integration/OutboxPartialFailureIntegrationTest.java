@@ -31,19 +31,15 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Verifies partial-failure isolation inside a single {@code publishBatch()} transaction: when one
- * event in the batch fails to publish, the events that already succeeded are NOT rolled back.
+ * 단일 {@code publishBatch()} 트랜잭션 내 부분 실패 격리 검증: 배치에서 이벤트 1개가 발행 실패해도 이미 성공한 이벤트는 롤백되지 않음.
  *
- * <p>The relay catches per event inside the loop ({@code OutboxRelay#publishBatch}), so a failure
- * increments that one row's {@code attempts} and leaves it PENDING for retry, while the exception
- * never escapes the method — the transaction commits normally and the successful row stays
- * PUBLISHED. This test forces exactly that mix: a valid {@code OrderPlaced} row (registered type)
- * alongside a row whose {@code eventType} is not in the {@code OutboxTypeRegistry} (so {@code
- * registry.get()} throws). Both sit in the same batch (batchSize defaults to 100).
+ * <p>릴레이가 루프 내 이벤트별로 예외를 포착({@code OutboxRelay#publishBatch})하므로 실패 시 해당 행의 {@code attempts}만 증가하고
+ * PENDING 상태로 재시도 대기, 예외가 메서드를 벗어나지 않아 트랜잭션은 정상 커밋되고 성공 행은 PUBLISHED 유지. 이 테스트는 유효한 {@code
+ * OrderPlaced} 행(등록된 타입)과 {@code OutboxTypeRegistry}에 없는 {@code eventType} 행({@code registry.get()}
+ * 예외 발생)을 동일 배치(batchSize 기본 100)에 함께 구성.
  *
- * <p>Lives in its own class (own context + embedded Postgres + Kafka broker) so its publish does
- * not pollute the exact topic counts asserted by {@link OutboxRelayIntegrationTest}. Docker-free:
- * Zonky embedded Postgres + {@code @EmbeddedKafka}.
+ * <p>독립 클래스(자체 컨텍스트 + 임베디드 Postgres + Kafka)로 분리하여 발행이 {@link OutboxRelayIntegrationTest}의 정확한 토픽
+ * 카운트 단언을 오염시키지 않도록 방지. Docker 불필요: Zonky 임베디드 Postgres + {@code @EmbeddedKafka}.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -63,7 +59,7 @@ class OutboxPartialFailureIntegrationTest {
     registry.add("spring.datasource.password", () -> "postgres");
     registry.add("spring.flyway.create-schemas", () -> "true");
     registry.add("spring.kafka.properties.schema.registry.url", () -> "mock://order-test");
-    // Disable scheduled polling — drive publishBatch() manually.
+    // 스케줄 폴링 비활성화 — publishBatch()를 수동 구동.
     registry.add("outbox.relay.poll-interval-ms", () -> "3600000");
     registry.add(
         "spring.security.oauth2.resourceserver.jwt.issuer-uri",
@@ -84,12 +80,11 @@ class OutboxPartialFailureIntegrationTest {
   @Autowired private EmbeddedKafkaBroker embeddedKafka;
 
   @Test
-  @DisplayName(
-      "one bad event in a batch does NOT roll back the published one: A=PUBLISHED+sent, B=PENDING attempts=1")
+  @DisplayName("배치 내 불량 이벤트 1개가 발행된 이벤트를 롤백하지 않음: A=PUBLISHED+전송, B=PENDING attempts=1")
   void partialFailure_doesNotRollBackPublishedEvent() {
     Instant now = Instant.parse("2024-01-01T00:00:00Z");
 
-    // A: valid, registered type → publishes successfully.
+    // A: 유효하고 등록된 타입 → 발행 성공.
     UUID goodId = UUID.randomUUID();
     OrderPlaced payload =
         OrderPlaced.newBuilder()
@@ -109,7 +104,7 @@ class OutboxPartialFailureIntegrationTest {
             payload.toByteArray(),
             now));
 
-    // B: eventType NOT registered → registry.get() throws → caught per-event → stays PENDING.
+    // B: 미등록 eventType → registry.get() 예외 → 이벤트별 포착 → PENDING 유지.
     UUID badId = UUID.randomUUID();
     outboxRepository.save(
         OutboxEvent.pending(
@@ -122,25 +117,25 @@ class OutboxPartialFailureIntegrationTest {
             new byte[] {1},
             now.plusSeconds(1)));
 
-    // when: one batch processes both
+    // when: 단일 배치로 둘 다 처리
     int published = outboxRelay.publishBatch();
 
-    // then: only the good one counted as published
+    // then: 정상 이벤트만 발행 카운트에 포함
     assertThat(published).isEqualTo(1);
 
-    // A committed as PUBLISHED — the failure of B did NOT roll it back
+    // A는 PUBLISHED로 커밋 — B 실패가 A를 롤백하지 않음
     OutboxEvent good = outboxRepository.findById(goodId).orElseThrow();
     assertThat(good.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
     assertThat(good.getPublishedAt()).isNotNull();
     assertThat(good.getAttempts()).isZero();
 
-    // B stayed PENDING with attempts incremented — eligible for the next poll's retry
+    // B는 attempts 증가 후 PENDING 유지 — 다음 폴 재시도 대상
     OutboxEvent bad = outboxRepository.findById(badId).orElseThrow();
     assertThat(bad.getStatus()).isEqualTo(OutboxStatus.PENDING);
     assertThat(bad.getPublishedAt()).isNull();
     assertThat(bad.getAttempts()).isEqualTo(1);
 
-    // and A genuinely reached Kafka (exactly one record, the good one)
+    // A가 Kafka에 실제 도달(정확히 레코드 1개, 정상 이벤트)
     List<ConsumerRecord<String, OrderPlaced>> records = consumeOrderPlaced();
     assertThat(records).hasSize(1);
     assertThat(records.get(0).key()).isEqualTo(goodId.toString());

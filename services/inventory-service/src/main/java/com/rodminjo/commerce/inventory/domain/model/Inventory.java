@@ -5,11 +5,9 @@ import com.rodminjo.commerce.inventory.domain.InventoryErrorCode;
 import lombok.Getter;
 
 /**
- * Inventory aggregate for a single product. Immutable value-style: {@link #reserve(int)} and {@link
- * #release(int)} return a new instance, never mutate. The domain encodes the oversell invariant
- * (you cannot reserve beyond the available quantity); the persistence adapter enforces the same
- * rule atomically in the database via a conditional UPDATE. Keeping the rule here makes it
- * unit-testable without a database and documents the invariant the SQL guards.
+ * 단일 상품 재고 애그리게이트. 불변 값 스타일: {@link #reserve(int)}와 {@link #release(int)}는 변이 없이 새 인스턴스 반환. 도메인이
+ * 초과판매 불변식(가용 수량 초과 예약 불가)을 인코딩하며, 영속 어댑터는 동일 규칙을 조건부 UPDATE로 DB에서 원자적으로 강제. 도메인 레이어에 규칙을 보유함으로써 DB
+ * 없이 단위 테스트 가능하고 SQL이 수호하는 불변식을 문서화.
  */
 @Getter
 public final class Inventory {

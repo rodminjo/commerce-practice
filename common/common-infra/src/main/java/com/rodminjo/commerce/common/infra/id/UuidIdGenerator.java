@@ -4,7 +4,7 @@ import com.rodminjo.commerce.common.id.IdGenerator;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
-/** UUID id strategy — for aggregates needing a public/external or distributed identifier. */
+/** UUID ID 전략. 외부 공개 또는 분산 식별자가 필요한 애그리게이트용. */
 @Component
 public class UuidIdGenerator implements IdGenerator<UUID> {
 

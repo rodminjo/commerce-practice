@@ -4,7 +4,7 @@ import com.rodminjo.commerce.inventory.application.port.out.ReservationPort;
 import java.util.ArrayList;
 import java.util.List;
 
-/** In-memory fake of {@link ReservationPort}. Tracks reservations per order with a status. */
+/** {@link ReservationPort}의 인메모리 Fake. 주문별 예약 내역을 상태와 함께 추적. */
 public class FakeReservationPort implements ReservationPort {
 
   private final List<Entry> entries = new ArrayList<>();
@@ -20,7 +20,7 @@ public class FakeReservationPort implements ReservationPort {
     }
   }
 
-  /** Arranges active (RESERVED) reservations for an order. */
+  /** 지정 주문에 활성(RESERVED) 예약 초기화. */
   public void seedActive(String orderId, ReservedLine... lines) {
     for (ReservedLine line : lines) {
       entries.add(new Entry(orderId, line));
@@ -54,7 +54,7 @@ public class FakeReservationPort implements ReservationPort {
     }
   }
 
-  /** All reservations ever saved for an order, regardless of status (for assertions). */
+  /** 상태 무관, 주문에 저장된 전체 예약 조회(검증용). */
   public List<ReservedLine> saved(String orderId) {
     List<ReservedLine> result = new ArrayList<>();
     for (Entry entry : entries) {

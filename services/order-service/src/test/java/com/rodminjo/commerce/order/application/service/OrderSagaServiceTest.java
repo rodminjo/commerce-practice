@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class OrderSagaServiceTest {
@@ -45,84 +46,99 @@ class OrderSagaServiceTest {
         NOW);
   }
 
-  @Test
-  @DisplayName("onInventoryReserved(PENDING): payment.requested 적재 (amount/idempotencyKey 채움)")
-  void onInventoryReservedRequestsPayment() {
-    orderStateRepository.seed(orderWith(OrderStatus.PENDING));
+  @Nested
+  @DisplayName("onInventoryReserved — 재고 예약 완료 처리")
+  class OnInventoryReserved {
 
-    service.onInventoryReserved(ORDER_ID.toString());
+    @Test
+    @DisplayName("PENDING 주문 → payment.requested 적재 (amount/idempotencyKey 채움)")
+    void onInventoryReservedRequestsPayment() {
+      orderStateRepository.seed(orderWith(OrderStatus.PENDING));
 
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.aggregateType()).isEqualTo("Order");
-    assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
-    assertThat(appended.topic()).isEqualTo("payment.requested");
-    assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
-    PaymentRequested event = (PaymentRequested) appended.event();
-    assertThat(event.getAmountMinor()).isEqualTo(2000L);
-    assertThat(event.getCurrency()).isEqualTo("KRW");
-    assertThat(event.getIdempotencyKey()).isEqualTo(ORDER_ID.toString());
+      service.onInventoryReserved(ORDER_ID.toString());
+
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.aggregateType()).isEqualTo("Order");
+      assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
+      assertThat(appended.topic()).isEqualTo("payment.requested");
+      assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
+      PaymentRequested event = (PaymentRequested) appended.event();
+      assertThat(event.getAmountMinor()).isEqualTo(2000L);
+      assertThat(event.getCurrency()).isEqualTo("KRW");
+      assertThat(event.getIdempotencyKey()).isEqualTo(ORDER_ID.toString());
+    }
+
+    @Test
+    @DisplayName("이미 CONFIRMED 상태 → 가드로 무시, outbox 미적재")
+    void onInventoryReservedIgnoredWhenNotPending() {
+      orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+
+      service.onInventoryReserved(ORDER_ID.toString());
+
+      assertThat(outboxAppender.appended()).isEmpty();
+    }
   }
 
-  @Test
-  @DisplayName("onInventoryReserved(이미 CONFIRMED): 가드로 무시")
-  void onInventoryReservedIgnoredWhenNotPending() {
-    orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+  @Nested
+  @DisplayName("onPaymentCompleted — 결제 완료 처리")
+  class OnPaymentCompleted {
 
-    service.onInventoryReserved(ORDER_ID.toString());
+    @Test
+    @DisplayName("PENDING 주문 → CONFIRMED로 상태 갱신")
+    void onPaymentCompletedConfirms() {
+      orderStateRepository.seed(orderWith(OrderStatus.PENDING));
 
-    assertThat(outboxAppender.appended()).isEmpty();
+      service.onPaymentCompleted(ORDER_ID.toString());
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    }
+
+    @Test
+    @DisplayName("이미 CONFIRMED 상태 → 늦은 중복 무시, 상태 불변")
+    void onPaymentCompletedIgnoresDuplicate() {
+      orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+
+      service.onPaymentCompleted(ORDER_ID.toString());
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    }
   }
 
-  @Test
-  @DisplayName("onPaymentCompleted(PENDING): 주문 CONFIRMED + update")
-  void onPaymentCompletedConfirms() {
-    orderStateRepository.seed(orderWith(OrderStatus.PENDING));
+  @Nested
+  @DisplayName("onPaymentFailed — 결제 실패 처리")
+  class OnPaymentFailed {
 
-    service.onPaymentCompleted(ORDER_ID.toString());
+    @Test
+    @DisplayName("PENDING 주문 → CANCELLED + order.cancelled 적재 (보상 트리거)")
+    void onPaymentFailedCancelsAndCompensates() {
+      orderStateRepository.seed(orderWith(OrderStatus.PENDING));
 
-    Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
-    assertThat(stored.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
-  }
+      service.onPaymentFailed(ORDER_ID.toString(), "card-declined");
 
-  @Test
-  @DisplayName("onPaymentCompleted(이미 CONFIRMED): 늦은 중복 무시 (상태 불변)")
-  void onPaymentCompletedIgnoresDuplicate() {
-    orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+      assertThat(outboxAppender.appended()).hasSize(1);
+      Appended appended = outboxAppender.appended().get(0);
+      assertThat(appended.aggregateType()).isEqualTo("Order");
+      assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
+      assertThat(appended.topic()).isEqualTo("order.cancelled");
+      assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
+      assertThat(((OrderCancelled) appended.event()).getReason()).isEqualTo("card-declined");
+    }
 
-    service.onPaymentCompleted(ORDER_ID.toString());
+    @Test
+    @DisplayName("이미 CANCELLED 상태 → 가드로 무시, 상태 불변 및 outbox 미적재")
+    void onPaymentFailedIgnoredWhenTerminal() {
+      orderStateRepository.seed(orderWith(OrderStatus.CANCELLED));
 
-    Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
-    assertThat(stored.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
-  }
+      service.onPaymentFailed(ORDER_ID.toString(), "card-declined");
 
-  @Test
-  @DisplayName("onPaymentFailed(PENDING): CANCELLED + order.cancelled 적재 (보상 트리거)")
-  void onPaymentFailedCancelsAndCompensates() {
-    orderStateRepository.seed(orderWith(OrderStatus.PENDING));
-
-    service.onPaymentFailed(ORDER_ID.toString(), "card-declined");
-
-    Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
-    assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-    assertThat(outboxAppender.appended()).hasSize(1);
-    Appended appended = outboxAppender.appended().get(0);
-    assertThat(appended.aggregateType()).isEqualTo("Order");
-    assertThat(appended.aggregateId()).isEqualTo(ORDER_ID.toString());
-    assertThat(appended.topic()).isEqualTo("order.cancelled");
-    assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
-    assertThat(((OrderCancelled) appended.event()).getReason()).isEqualTo("card-declined");
-  }
-
-  @Test
-  @DisplayName("onPaymentFailed(이미 CANCELLED): 가드로 무시")
-  void onPaymentFailedIgnoredWhenTerminal() {
-    orderStateRepository.seed(orderWith(OrderStatus.CANCELLED));
-
-    service.onPaymentFailed(ORDER_ID.toString(), "card-declined");
-
-    Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
-    assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-    assertThat(outboxAppender.appended()).isEmpty();
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+      assertThat(outboxAppender.appended()).isEmpty();
+    }
   }
 }

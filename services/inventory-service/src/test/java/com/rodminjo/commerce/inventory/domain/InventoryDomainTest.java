@@ -9,7 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/** Locks the oversell invariant the atomic SQL UPDATE enforces in production. */
+/** 프로덕션 원자적 SQL UPDATE가 강제하는 초과판매 불변식 검증. */
+@DisplayName("Inventory 도메인")
 class InventoryDomainTest {
 
   @Nested

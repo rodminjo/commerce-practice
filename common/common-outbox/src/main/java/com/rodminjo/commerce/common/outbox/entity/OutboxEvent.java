@@ -50,8 +50,8 @@ public class OutboxEvent {
   private Instant publishedAt;
 
   /**
-   * Creates a fresh PENDING outbox record (attempts = 0). The single construction point for new
-   * events — keeps the PENDING/attempts invariant in the entity instead of scattered setter calls.
+   * PENDING 상태 아웃박스 레코드 생성(attempts = 0). 새 이벤트의 유일한 생성 지점. PENDING/attempts 불변 조건을 분산 setter 호출 대신
+   * 엔티티 내부에서 유지.
    */
   public static OutboxEvent pending(
       UUID id,

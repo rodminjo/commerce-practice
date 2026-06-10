@@ -4,16 +4,14 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Standard error response body for all services. Success responses are asymmetric — they return the
- * resource directly (200/201/204), only errors are wrapped in this envelope.
+ * 전 서비스 표준 에러 응답 본문. 성공 응답은 리소스 직접 반환(200/201/204), 에러만 이 봉투로 래핑.
  *
- * @param code machine-readable error code ({@code ErrorCode.code()})
- * @param message human-readable message
- * @param fieldErrors per-field validation errors; empty list when not a validation error (never
- *     null)
- * @param timestamp when the error occurred (from {@code ClockHolder})
- * @param path request path
- * @param traceId correlation id shared with the server log
+ * @param code 머신 가독 에러 코드({@code ErrorCode.code()})
+ * @param message 사람 가독 메시지
+ * @param fieldErrors 필드별 유효성 에러. 유효성 에러 외에는 빈 리스트(null 아님)
+ * @param timestamp 에러 발생 시각({@code ClockHolder} 기준)
+ * @param path 요청 경로
+ * @param traceId 서버 로그와 공유하는 상관 ID
  */
 public record ErrorResponse(
     String code,

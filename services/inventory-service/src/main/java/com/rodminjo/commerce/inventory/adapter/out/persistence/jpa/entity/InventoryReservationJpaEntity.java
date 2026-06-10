@@ -13,9 +13,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * One reserved line per (order, product). Lets the compensation path release exactly what an order
- * reserved (the {@code order.cancelled} event carries only the orderId), and gives the reserve path
- * a cheap "already reserved?" idempotency check.
+ * (주문, 상품) 단위 예약 라인 엔티티. 보상 경로({@code order.cancelled}는 orderId만 포함)에서 정확한 수량 복구를 가능케 하고, 예약 경로에서
+ * "이미 예약됨" 멱등성 검사 수단으로 활용.
  */
 @NoArgsConstructor
 @Getter

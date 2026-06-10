@@ -3,11 +3,10 @@ package com.rodminjo.commerce.common.time;
 import java.time.Instant;
 
 /**
- * Shared contract for "current time" so code never calls {@link Instant#now()} directly. Time
- * becomes an injected dependency — tests substitute a fixed clock for deterministic results.
+ * 현재 시각 공통 계약. {@link Instant#now()} 직접 호출 금지. 시각을 주입 의존으로 처리하여 테스트 시 고정 클록으로 교체 가능.
  *
- * <p>Lives in {@code common-core} (framework-free) so domain/application code can depend on it. The
- * system implementation lives in {@code common-infra}. Mirrors the {@code IdGenerator} split.
+ * <p>{@code common-core}(프레임워크 비의존)에 위치. 시스템 구현체는 {@code common-infra}에 위치. {@code IdGenerator} 분리
+ * 패턴과 동일.
  */
 @FunctionalInterface
 public interface ClockHolder {

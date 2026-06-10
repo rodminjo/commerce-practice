@@ -5,7 +5,7 @@ import com.rodminjo.commerce.common.outbox.appender.OutboxAppender;
 import java.util.ArrayList;
 import java.util.List;
 
-/** In-memory fake of {@link OutboxAppender} that records every append for state assertions. */
+/** {@link OutboxAppender}의 인메모리 Fake. 상태 검증을 위해 모든 append 호출을 기록. */
 public class FakeOutboxAppender implements OutboxAppender {
 
   public record Appended(

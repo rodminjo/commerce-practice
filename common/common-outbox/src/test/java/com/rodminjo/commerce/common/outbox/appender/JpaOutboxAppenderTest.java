@@ -10,6 +10,8 @@ import com.rodminjo.commerce.common.outbox.entity.OutboxStatus;
 import com.rodminjo.commerce.common.outbox.repository.OutboxRepository;
 import com.rodminjo.commerce.common.time.ClockHolder;
 import java.time.Instant;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@DisplayName("JpaOutboxAppender")
 @ExtendWith(MockitoExtension.class)
 class JpaOutboxAppenderTest {
 
@@ -28,29 +31,35 @@ class JpaOutboxAppenderTest {
 
   @InjectMocks private JpaOutboxAppender appender;
 
-  @Test
-  void append_savesOutboxEventWithCorrectFields() {
-    // given
-    when(clockHolder.now()).thenReturn(FIXED_NOW);
-    StringValue message = StringValue.of("hello");
+  @Nested
+  @DisplayName("append 호출 시")
+  class Append {
 
-    // when
-    appender.append("Order", "oid-1", "order.placed", "oid-1", message);
+    @Test
+    @DisplayName("올바른 필드로 OutboxEvent 저장")
+    void append_savesOutboxEventWithCorrectFields() {
+      // given
+      when(clockHolder.now()).thenReturn(FIXED_NOW);
+      StringValue message = StringValue.of("hello");
 
-    // then
-    ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
-    verify(outboxRepository).save(captor.capture());
+      // when
+      appender.append("Order", "oid-1", "order.placed", "oid-1", message);
 
-    OutboxEvent saved = captor.getValue();
-    assertThat(saved.getAggregateType()).isEqualTo("Order");
-    assertThat(saved.getAggregateId()).isEqualTo("oid-1");
-    assertThat(saved.getTopic()).isEqualTo("order.placed");
-    assertThat(saved.getPartitionKey()).isEqualTo("oid-1");
-    assertThat(saved.getEventType()).isEqualTo("google.protobuf.StringValue");
-    assertThat(saved.getPayload()).isEqualTo(message.toByteArray());
-    assertThat(saved.getStatus()).isEqualTo(OutboxStatus.PENDING);
-    assertThat(saved.getAttempts()).isEqualTo(0);
-    assertThat(saved.getId()).isNotNull();
-    assertThat(saved.getCreatedAt()).isEqualTo(FIXED_NOW);
+      // then
+      ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+      verify(outboxRepository).save(captor.capture());
+
+      OutboxEvent saved = captor.getValue();
+      assertThat(saved.getAggregateType()).isEqualTo("Order");
+      assertThat(saved.getAggregateId()).isEqualTo("oid-1");
+      assertThat(saved.getTopic()).isEqualTo("order.placed");
+      assertThat(saved.getPartitionKey()).isEqualTo("oid-1");
+      assertThat(saved.getEventType()).isEqualTo("google.protobuf.StringValue");
+      assertThat(saved.getPayload()).isEqualTo(message.toByteArray());
+      assertThat(saved.getStatus()).isEqualTo(OutboxStatus.PENDING);
+      assertThat(saved.getAttempts()).isEqualTo(0);
+      assertThat(saved.getId()).isNotNull();
+      assertThat(saved.getCreatedAt()).isEqualTo(FIXED_NOW);
+    }
   }
 }

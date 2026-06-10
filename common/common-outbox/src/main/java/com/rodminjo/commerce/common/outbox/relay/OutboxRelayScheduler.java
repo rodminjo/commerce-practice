@@ -4,14 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 
 /**
- * Scheduling trigger for the outbox relay. Kept as a separate bean from {@link OutboxRelay} on
- * purpose: the call to {@link OutboxRelay#publishBatch()} crosses a bean boundary, so it goes
- * through the Spring proxy and the {@code @Transactional} advice is applied. (A {@code @Scheduled}
- * method calling a {@code @Transactional} method on the <em>same</em> bean would self-invoke and
- * silently skip the transaction.)
+ * 아웃박스 릴레이 스케줄링 트리거. {@link OutboxRelay}와 의도적으로 별도 빈으로 분리. {@link OutboxRelay#publishBatch()} 호출이 빈
+ * 경계를 넘어 Spring 프록시를 거치므로 {@code @Transactional} 어드바이스가 정상 적용됨. (같은 빈 내 {@code @Scheduled} →
+ * {@code @Transactional} 자기 호출 시 트랜잭션 묵시적 누락 방지.)
  *
- * <p>Requires {@code @EnableScheduling} on the consuming application. Poll interval comes from
- * {@code outbox.relay.poll-interval-ms} (see {@link OutboxRelayProperties}).
+ * <p>소비 애플리케이션에 {@code @EnableScheduling} 필요. 폴 간격은 {@code outbox.relay.poll-interval-ms}({@link
+ * OutboxRelayProperties} 참조).
  */
 @RequiredArgsConstructor
 public class OutboxRelayScheduler {

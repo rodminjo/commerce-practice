@@ -14,9 +14,9 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
 /**
- * Type-specific {@link ConcurrentKafkaListenerContainerFactory} for {@code payment.requested}. The
- * {@code SPECIFIC_PROTOBUF_VALUE_TYPE} makes {@code KafkaProtobufDeserializer} yield {@link
- * PaymentRequested} rather than a {@code DynamicMessage}.
+ * {@code payment.requested} 전용 {@link ConcurrentKafkaListenerContainerFactory} 설정. {@code
+ * SPECIFIC_PROTOBUF_VALUE_TYPE} 지정으로 {@code KafkaProtobufDeserializer}가 {@code DynamicMessage} 대신
+ * {@link PaymentRequested}를 반환.
  */
 @Configuration
 @EnableConfigurationProperties(KafkaConsumerProperties.class)

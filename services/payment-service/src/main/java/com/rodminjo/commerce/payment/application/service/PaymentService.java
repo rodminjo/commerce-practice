@@ -17,9 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Processes a payment request (mock gateway). Persists a {@code payments} row and appends either
- * {@code PaymentCompleted} or {@code PaymentFailed} to the outbox in the same transaction. Success
- * is the default; {@link PaymentSimulationProperties} injects a deterministic failure for tests.
+ * 결제 요청 처리(모의 게이트웨이). {@code payments} 행 저장 및 {@code PaymentCompleted} 또는 {@code PaymentFailed}를 동일
+ * 트랜잭션 내 outbox에 적재. 기본값은 성공. {@link PaymentSimulationProperties}로 테스트용 결정적 실패 주입 가능.
  */
 @RequiredArgsConstructor
 @Service

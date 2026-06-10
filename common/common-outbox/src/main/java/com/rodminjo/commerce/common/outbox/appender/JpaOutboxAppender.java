@@ -8,17 +8,15 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
 /**
- * JPA-backed {@link OutboxAppender}. Carries no own {@code @Transactional} — it joins the caller's
- * transaction (default propagation) so the order INSERT and the outbox INSERT commit together.
- * Wired as a {@code @Bean} in {@link com.rodminjo.commerce.common.outbox.OutboxAutoConfiguration}
- * (not component-scanned).
+ * JPA 기반 {@link OutboxAppender}. 자체 {@code @Transactional} 없음. 호출자 트랜잭션에 합류(기본 전파)하여 주문 INSERT와
+ * 아웃박스 INSERT를 원자적으로 커밋. {@link com.rodminjo.commerce.common.outbox.OutboxAutoConfiguration}에서
+ * {@code @Bean}으로 등록(컴포넌트 스캔 제외).
  */
 @RequiredArgsConstructor
 public class JpaOutboxAppender implements OutboxAppender {
 
   private final OutboxRepository outboxRepository;
   private final ClockHolder clockHolder;
-
 
   @Override
   public void append(

@@ -3,9 +3,8 @@ package com.rodminjo.commerce.inventory.application.port.out;
 import java.util.List;
 
 /**
- * Tracks what each order reserved so the compensation path ({@code order.cancelled}, which carries
- * only the orderId) can release exactly those quantities. Doubles as a partial idempotency guard:
- * an order that already has active reservations is not reserved again.
+ * 주문별 예약 내역 추적 포트. 보상 경로({@code order.cancelled} — orderId만 포함)에서 정확한 수량 복구에 사용. 부분 멱등성 가드 겸용: 이미
+ * 활성 예약이 있는 주문은 재예약하지 않음.
  */
 public interface ReservationPort {
 

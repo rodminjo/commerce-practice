@@ -41,7 +41,7 @@ public class OrderPersistenceAdapter implements SaveOrderPort, OrderStateReposit
         .map(entity -> entity.toDomain(orderItemJpaRepository.findByOrderId(id)));
   }
 
-  /** Persists a status transition only — never touches the (immutable) line items. */
+  /** 상태 전이만 영속화 — 불변 라인 아이템은 변경하지 않음. */
   @Override
   public void update(Order order) {
     OrderJpaEntity entity =

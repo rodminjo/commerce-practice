@@ -1,8 +1,7 @@
 package com.rodminjo.commerce.common.error;
 
 /**
- * Cross-cutting error codes not owned by any single domain — validation, auth, malformed requests,
- * and the server-side fallback. Domain-specific codes live in each service's {@code <X>ErrorCode}.
+ * 도메인에 귀속되지 않는 공통 에러 코드. 유효성 검사, 인증, 잘못된 요청, 서버 측 폴백 처리. 도메인별 코드는 각 서비스의 {@code <X>ErrorCode}에 위치.
  */
 public enum CommonErrorCode implements ErrorCode {
   VALIDATION_ERROR("VALIDATION_ERROR", "입력값이 올바르지 않습니다", ErrorType.INVALID),

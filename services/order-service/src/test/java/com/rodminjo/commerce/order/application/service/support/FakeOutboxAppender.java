@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * In-memory {@link OutboxAppender} test double. Records every {@link #append} call as an {@link
- * Appended} record so tests assert on stored events (state) instead of Mockito interactions.
+ * 인메모리 {@link OutboxAppender} 테스트 대역. 모든 {@link #append} 호출을 {@link Appended} 레코드로 기록하여 테스트가
+ * Mockito 인터랙션 대신 저장 상태(state)로 단언할 수 있도록 함.
  */
 public class FakeOutboxAppender implements OutboxAppender {
 
@@ -19,12 +19,12 @@ public class FakeOutboxAppender implements OutboxAppender {
     appended.add(new Appended(aggregateType, aggregateId, topic, partitionKey, event));
   }
 
-  /** All recorded appends, in call order. */
+  /** 호출 순서대로 기록된 전체 append 목록. */
   public List<Appended> appended() {
     return appended;
   }
 
-  /** A single captured {@link OutboxAppender#append} invocation. */
+  /** 단일 {@link OutboxAppender#append} 호출 캡처 레코드. */
   public record Appended(
       String aggregateType, String aggregateId, String topic, String partitionKey, Message event) {}
 }

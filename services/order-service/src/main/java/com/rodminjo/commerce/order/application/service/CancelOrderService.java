@@ -15,9 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * User-initiated cancellation. Unlike the Saga's guarded handlers, this lets the domain guard throw
- * (→ 409) when the order is no longer cancellable (e.g. already COMPLETED). On success it emits
- * {@code order.cancelled}, which the inventory service consumes to release the reserved stock.
+ * 사용자 발생 취소 처리. Saga 핸들러와 달리 도메인 가드가 예외(→ 409)를 던지도록 허용(예: 이미 COMPLETED). 성공 시 {@code
+ * order.cancelled} 발행 — 재고 서비스가 소비하여 예약 재고를 해제.
  */
 @RequiredArgsConstructor
 @Service

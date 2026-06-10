@@ -35,15 +35,14 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Docker-free integration test of the Transactional Outbox relay path.
+ * Transactional Outbox 릴레이 경로 통합 테스트(Docker 불필요).
  *
- * <p>Infra: real embedded PostgreSQL (Zonky — runs an actual postgres binary, no Docker) so the
- * {@code FOR UPDATE SKIP LOCKED} outbox query and Postgres-specific DDL are genuinely exercised,
- * plus in-JVM Kafka via {@code @EmbeddedKafka}. Schema Registry is the Confluent {@code mock://}
- * in-memory registry shared by producer (relay) and the test consumer.
+ * <p>인프라: 실제 임베디드 PostgreSQL(Zonky — 실제 postgres 바이너리 실행)로 {@code FOR UPDATE SKIP LOCKED} outbox 쿼리
+ * 및 Postgres 전용 DDL 실제 검증 + {@code @EmbeddedKafka}로 인-JVM Kafka 사용. Schema Registry는 Confluent
+ * {@code mock://} 인메모리 레지스트리를 프로듀서(릴레이)와 테스트 컨슈머가 공유.
  *
- * <p>Verification goes through real repositories/mappers — JPA ({@link OutboxTestRepository}) for
- * simple reads and MyBatis ({@link GetOrderUseCase}) for the order read model — never raw SQL.
+ * <p>검증은 실제 리포지토리/매퍼 사용 — 단순 읽기는 JPA({@link OutboxTestRepository}), 주문 읽기 모델은 MyBatis({@link
+ * GetOrderUseCase}) — raw SQL 사용 안 함.
  */
 @SpringBootTest
 @EmbeddedKafka(
@@ -63,9 +62,9 @@ class OutboxRelayIntegrationTest {
     registry.add("spring.datasource.password", () -> "postgres");
     registry.add("spring.flyway.create-schemas", () -> "true");
     registry.add("spring.kafka.properties.schema.registry.url", () -> "mock://order-test");
-    // Disable scheduled polling — control publishBatch() manually in tests
+    // 스케줄 폴링 비활성화 — 테스트에서 publishBatch()를 수동 제어
     registry.add("outbox.relay.poll-interval-ms", () -> "3600000");
-    // Avoid Keycloak issuer lookup during tests
+    // 테스트 중 Keycloak issuer 조회 방지
     registry.add(
         "spring.security.oauth2.resourceserver.jwt.issuer-uri",
         () -> "http://localhost:9999/realms/test");
@@ -89,8 +88,7 @@ class OutboxRelayIntegrationTest {
   @Autowired private EmbeddedKafkaBroker embeddedKafka;
 
   @Test
-  @DisplayName(
-      "A: placeOrder → outbox PENDING → publishBatch → Kafka message → idempotent 2nd call")
+  @DisplayName("A: placeOrder → outbox PENDING → publishBatch → Kafka 메시지 전달 → 2차 호출 멱등성")
   void happyPath_and_idempotent() {
     PlaceOrderCommand cmd =
         new PlaceOrderCommand(
@@ -98,7 +96,7 @@ class OutboxRelayIntegrationTest {
 
     UUID orderId = placeOrderUseCase.place(cmd).orderId();
 
-    // outbox: exactly one PENDING row with the right metadata (JPA repository — simple read)
+    // outbox: 올바른 메타데이터를 가진 PENDING 행 정확히 1개(JPA 리포지토리 — 단순 읽기)
     List<OutboxEvent> events = outboxRepository.findByAggregateId(orderId.toString());
     assertThat(events).hasSize(1);
     OutboxEvent event = events.get(0);
@@ -106,7 +104,7 @@ class OutboxRelayIntegrationTest {
     assertThat(event.getEventType()).isEqualTo("commerce.events.order.OrderPlaced");
     assertThat(event.getPartitionKey()).isEqualTo(orderId.toString());
 
-    // read model via MyBatis (order + items join)
+    // MyBatis로 읽기 모델 검증(주문 + 항목 조인)
     OrderView view = getOrderUseCase.getOrder(orderId);
     assertThat(view.status()).isEqualTo(OrderStatus.PENDING);
     assertThat(view.currency()).isEqualTo("KRW");
@@ -120,16 +118,16 @@ class OutboxRelayIntegrationTest {
               assertThat(item.unitPriceMinor()).isEqualTo(500L);
             });
 
-    // publish batch — expect 1 published
+    // 배치 발행 — 1건 발행 기대
     int published = outboxRelay.publishBatch();
     assertThat(published).isEqualTo(1);
 
-    // outbox row is now PUBLISHED with published_at set
+    // outbox 행이 published_at 설정과 함께 PUBLISHED 상태로 전환
     OutboxEvent afterPublish = outboxRepository.findByAggregateId(orderId.toString()).get(0);
     assertThat(afterPublish.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
     assertThat(afterPublish.getPublishedAt()).isNotNull();
 
-    // consume from Kafka
+    // Kafka에서 소비
     Properties consumerProps = new Properties();
     consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedKafka.getBrokersAsString());
     consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "test-consumer-" + UUID.randomUUID());
@@ -156,7 +154,7 @@ class OutboxRelayIntegrationTest {
     assertThat(record.key()).isEqualTo(orderId.toString());
     assertThat(record.value().getOrderId()).isEqualTo(orderId.toString());
 
-    // idempotent: 2nd publishBatch returns 0
+    // 멱등성: 2차 publishBatch는 0 반환
     int secondPublish = outboxRelay.publishBatch();
     assertThat(secondPublish).isEqualTo(0);
   }

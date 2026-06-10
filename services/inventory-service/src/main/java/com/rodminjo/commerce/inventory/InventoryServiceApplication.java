@@ -5,10 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-// Component scan stays broad to pick up common-infra beans under com.rodminjo.commerce.common.*.
-// common-outbox wires itself via OutboxAutoConfiguration (classpath auto-config), so this service
-// keeps its own @EnableJpaRepositories/@EntityScan narrowed to com.rodminjo.commerce.inventory.
-// @EnableScheduling activates the outbox relay scheduler.
+// 컴포넌트 스캔 범위를 com.rodminjo.commerce 전체로 설정 — common-infra 빈 포함.
+// common-outbox는 OutboxAutoConfiguration(클래스패스 자동 설정)으로 자가 등록.
+// @EnableJpaRepositories/@EntityScan은 inventory 패키지만 한정.
+// @EnableScheduling — outbox relay 스케줄러 활성화.
 @SpringBootApplication(scanBasePackages = "com.rodminjo.commerce")
 @EntityScan(basePackages = "com.rodminjo.commerce.inventory")
 @EnableScheduling
