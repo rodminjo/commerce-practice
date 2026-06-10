@@ -1,5 +1,7 @@
 package com.rodminjo.commerce.order.adapter.in.web;
 
+import com.rodminjo.commerce.order.application.port.in.CancelOrderUseCase;
+import com.rodminjo.commerce.order.application.port.in.CancelOrderUseCase.CancelOrderCommand;
 import com.rodminjo.commerce.order.application.port.in.GetOrderUseCase;
 import com.rodminjo.commerce.order.application.port.in.PlaceOrderUseCase;
 import com.rodminjo.commerce.order.domain.model.OrderStatus;
@@ -17,6 +19,7 @@ public class OrderController {
 
   private final PlaceOrderUseCase placeOrderUseCase;
   private final GetOrderUseCase getOrderUseCase;
+  private final CancelOrderUseCase cancelOrderUseCase;
   private final OrderWebMapper orderWebMapper;
 
   @PostMapping
@@ -30,5 +33,13 @@ public class OrderController {
   public ResponseEntity<OrderDetailResponse> getOrder(@PathVariable UUID id) {
     OrderDetailResponse body = orderWebMapper.toResponse(getOrderUseCase.getOrder(id));
     return ResponseEntity.ok(body);
+  }
+
+  @PostMapping("/{id}/cancel")
+  public ResponseEntity<OrderResponse> cancelOrder(
+      @PathVariable UUID id, @RequestBody(required = false) CancelOrderRequest request) {
+    String reason = request == null ? null : request.reason();
+    cancelOrderUseCase.cancel(new CancelOrderCommand(id, reason));
+    return ResponseEntity.ok(new OrderResponse(id, OrderStatus.CANCELLED));
   }
 }

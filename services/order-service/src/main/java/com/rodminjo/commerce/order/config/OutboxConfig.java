@@ -3,6 +3,7 @@ package com.rodminjo.commerce.order.config;
 import com.rodminjo.commerce.common.outbox.relay.OutboxTypeRegistry;
 import com.rodminjo.commerce.events.order.OrderCancelled;
 import com.rodminjo.commerce.events.order.OrderPlaced;
+import com.rodminjo.commerce.events.payment.PaymentRequested;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +15,7 @@ public class OutboxConfig {
     OutboxTypeRegistry registry = new OutboxTypeRegistry();
     registry.register(OrderPlaced.getDescriptor());
     registry.register(OrderCancelled.getDescriptor());
+    registry.register(PaymentRequested.getDescriptor());
     return registry;
   }
 }

@@ -1,0 +1,89 @@
+package com.rodminjo.commerce.inventory.application.service;
+
+import com.google.protobuf.Timestamp;
+import com.rodminjo.commerce.common.error.DomainException;
+import com.rodminjo.commerce.common.outbox.appender.OutboxAppender;
+import com.rodminjo.commerce.common.time.ClockHolder;
+import com.rodminjo.commerce.events.inventory.InventoryReserved;
+import com.rodminjo.commerce.events.inventory.ReservedItem;
+import com.rodminjo.commerce.inventory.application.port.in.ReserveStockUseCase;
+import com.rodminjo.commerce.inventory.application.port.out.InventoryStockPort;
+import com.rodminjo.commerce.inventory.application.port.out.ReservationPort;
+import com.rodminjo.commerce.inventory.application.port.out.ReservationPort.ReservedLine;
+import com.rodminjo.commerce.inventory.domain.InventoryErrorCode;
+import java.time.Instant;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Reserves stock for an order placed upstream. Each line is reserved with an atomic conditional
+ * UPDATE ({@code stock - reserved >= qty}); an affected-row count of 0 means insufficient stock and
+ * rolls the whole multi-item reservation back (all-or-nothing). On full success it appends an
+ * {@code InventoryReserved} event to the outbox in the same transaction.
+ */
+@Slf4j
+@RequiredArgsConstructor
+@Service
+public class ReserveStockService implements ReserveStockUseCase {
+
+  private final InventoryStockPort stockPort;
+  private final ReservationPort reservationPort;
+  private final OutboxAppender outboxAppender;
+  private final ClockHolder clockHolder;
+
+  @Override
+  @Transactional
+  public void reserve(ReserveStockCommand command) {
+    // Partial idempotency guard (at-least-once): a redelivered order.placed must not
+    // double-reserve.
+    if (!reservationPort.findActive(command.orderId()).isEmpty()) {
+      log.info("Order {} already has active reservations; skipping reserve", command.orderId());
+      return;
+    }
+
+    for (ReserveStockCommand.Line line : command.items()) {
+      if (!stockPort.exists(line.productId())) {
+        throw new DomainException(
+            InventoryErrorCode.PRODUCT_NOT_FOUND, "상품을 찾을 수 없습니다: " + line.productId());
+      }
+      int affected = stockPort.reserve(line.productId(), line.quantity());
+      if (affected == 0) {
+        throw new DomainException(
+            InventoryErrorCode.INSUFFICIENT_STOCK, "재고가 부족합니다: " + line.productId());
+      }
+    }
+
+    List<ReservedLine> reservedLines =
+        command.items().stream()
+            .map(line -> new ReservedLine(line.productId(), line.quantity()))
+            .toList();
+    reservationPort.saveAll(command.orderId(), reservedLines);
+
+    outboxAppender.append(
+        "Inventory",
+        command.orderId(),
+        "inventory.reserved",
+        command.orderId(),
+        buildEvent(command));
+  }
+
+  private InventoryReserved buildEvent(ReserveStockCommand command) {
+    Instant now = clockHolder.now();
+    Timestamp occurredAt =
+        Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
+
+    InventoryReserved.Builder builder =
+        InventoryReserved.newBuilder().setOrderId(command.orderId()).setOccurredAt(occurredAt);
+    for (ReserveStockCommand.Line line : command.items()) {
+      builder.addItems(
+          ReservedItem.newBuilder()
+              .setProductId(line.productId())
+              .setQuantity(line.quantity())
+              .build());
+    }
+    return builder.build();
+  }
+}

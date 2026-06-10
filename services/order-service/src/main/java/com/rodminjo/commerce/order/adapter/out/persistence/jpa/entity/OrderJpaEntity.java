@@ -51,4 +51,9 @@ public class OrderJpaEntity extends BaseEntity {
     return Order.reconstitute(
         id, customerId, status, domainItems, totalAmountMinor, currency, createdAt);
   }
+
+  /** Applies a status transition decided by the domain; JPA auditing stamps audit_updated_*. */
+  public void changeStatus(OrderStatus status) {
+    this.status = status;
+  }
 }

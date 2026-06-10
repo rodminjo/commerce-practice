@@ -5,6 +5,7 @@ import com.rodminjo.commerce.common.outbox.entity.OutboxEvent;
 import com.rodminjo.commerce.common.outbox.repository.OutboxRepository;
 import com.rodminjo.commerce.common.time.ClockHolder;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 /**
  * JPA-backed {@link OutboxAppender}. Carries no own {@code @Transactional} — it joins the caller's
@@ -12,15 +13,12 @@ import java.util.UUID;
  * Wired as a {@code @Bean} in {@link com.rodminjo.commerce.common.outbox.OutboxAutoConfiguration}
  * (not component-scanned).
  */
+@RequiredArgsConstructor
 public class JpaOutboxAppender implements OutboxAppender {
 
   private final OutboxRepository outboxRepository;
   private final ClockHolder clockHolder;
 
-  public JpaOutboxAppender(OutboxRepository outboxRepository, ClockHolder clockHolder) {
-    this.outboxRepository = outboxRepository;
-    this.clockHolder = clockHolder;
-  }
 
   @Override
   public void append(

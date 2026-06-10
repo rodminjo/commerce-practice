@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.rodminjo.commerce.common.error.DomainException;
 import com.rodminjo.commerce.common.infra.time.SystemClockHolder;
 import com.rodminjo.commerce.common.infra.web.GlobalExceptionHandler;
+import com.rodminjo.commerce.order.application.port.in.CancelOrderUseCase;
 import com.rodminjo.commerce.order.application.port.in.GetOrderUseCase;
 import com.rodminjo.commerce.order.application.port.in.GetOrderUseCase.OrderView;
 import com.rodminjo.commerce.order.application.port.in.PlaceOrderUseCase;
@@ -51,6 +52,8 @@ class OrderControllerTest {
   @MockitoBean private PlaceOrderUseCase placeOrderUseCase;
 
   @MockitoBean private GetOrderUseCase getOrderUseCase;
+
+  @MockitoBean private CancelOrderUseCase cancelOrderUseCase;
 
   @MockitoBean private JwtDecoder jwtDecoder;
 
@@ -160,6 +163,40 @@ class OrderControllerTest {
             post("/api/orders").with(jwt()).contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+  }
+
+  @Test
+  @DisplayName("POST /api/orders/{id}/cancel without token → 401")
+  void cancelOrder_noToken_returns401() throws Exception {
+    mockMvc
+        .perform(post("/api/orders/" + UUID.randomUUID() + "/cancel"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("POST /api/orders/{id}/cancel with JWT → 200 CANCELLED")
+  void cancelOrder_withJwt_returns200() throws Exception {
+    UUID id = UUID.randomUUID();
+
+    mockMvc
+        .perform(post("/api/orders/" + id + "/cancel").with(jwt()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.orderId").value(id.toString()))
+        .andExpect(jsonPath("$.status").value("CANCELLED"));
+  }
+
+  @Test
+  @DisplayName("cancel on non-cancellable order → 409 (도메인 가드)")
+  void cancelOrder_whenNotCancellable_returns409() throws Exception {
+    UUID id = UUID.randomUUID();
+    org.mockito.Mockito.doThrow(new DomainException(OrderErrorCode.INVALID_STATE_TRANSITION))
+        .when(cancelOrderUseCase)
+        .cancel(any());
+
+    mockMvc
+        .perform(post("/api/orders/" + id + "/cancel").with(jwt()))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("INVALID_STATE_TRANSITION"));
   }
 
   @Test

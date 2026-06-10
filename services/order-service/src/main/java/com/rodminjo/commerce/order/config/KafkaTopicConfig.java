@@ -17,4 +17,10 @@ public class KafkaTopicConfig {
   public NewTopic orderCancelled() {
     return TopicBuilder.name("order.cancelled").partitions(3).replicas(1).build();
   }
+
+  // Order is the Saga brain and the producer of payment.requested, so it owns the topic's creation.
+  @Bean
+  public NewTopic paymentRequested() {
+    return TopicBuilder.name("payment.requested").partitions(3).replicas(1).build();
+  }
 }
