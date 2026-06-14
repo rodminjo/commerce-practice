@@ -15,4 +15,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
+	// Docker-free slice testing: real embedded Postgres (Zonky). 멱등 컨슈머의 UNIQUE 충돌/롤백은 실DB로만 검증 가능.
+	testImplementation enforcedPlatform('io.zonky.test.postgres:embedded-postgres-binaries-bom:17.10.0')
+	testImplementation 'io.zonky.test:embedded-postgres:2.2.2'
+	testRuntimeOnly 'io.zonky.test.postgres:embedded-postgres-binaries-darwin-arm64v8'
 }

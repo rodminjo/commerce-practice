@@ -8,11 +8,15 @@ import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.StringValue;
 import com.rodminjo.commerce.common.outbox.entity.OutboxEvent;
 import com.rodminjo.commerce.common.outbox.entity.OutboxStatus;
+import com.rodminjo.commerce.common.outbox.inbox.EventIdHeader;
 import com.rodminjo.commerce.common.outbox.repository.OutboxRepository;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,9 +53,9 @@ class OutboxRelayTest {
             new OutboxRelayProperties());
   }
 
-  private OutboxEvent buildPendingEvent() throws Exception {
+  private OutboxEvent buildPendingEvent(UUID id) throws Exception {
     return OutboxEvent.pending(
-        UUID.randomUUID(),
+        id,
         "Order",
         "oid-1",
         "google.protobuf.StringValue",
@@ -66,10 +70,11 @@ class OutboxRelayTest {
   class PublishBatch {
 
     @Test
-    @DisplayName("PENDING 이벤트 존재 → Kafka 전송 후 PUBLISHED 상태로 변경")
+    @DisplayName("PENDING 이벤트 존재 → topic/key/value + x-event-id 헤더로 전송 후 PUBLISHED 상태로 변경")
     void publishBatch_sendsKafkaMessage_andMarksPublished() throws Exception {
       // given
-      OutboxEvent event = buildPendingEvent();
+      UUID eventId = UUID.randomUUID();
+      OutboxEvent event = buildPendingEvent(eventId);
       when(outboxRepository.lockPendingBatch(anyInt())).thenReturn(List.of(event));
 
       // when
@@ -78,14 +83,20 @@ class OutboxRelayTest {
       // then
       assertThat(count).isEqualTo(1);
 
-      ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
-      ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-      ArgumentCaptor<Object> valueCaptor = ArgumentCaptor.forClass(Object.class);
-      verify(kafkaTemplate).send(topicCaptor.capture(), keyCaptor.capture(), valueCaptor.capture());
+      @SuppressWarnings("unchecked")
+      ArgumentCaptor<ProducerRecord<String, Object>> recordCaptor =
+          ArgumentCaptor.forClass(ProducerRecord.class);
+      verify(kafkaTemplate).send(recordCaptor.capture());
 
-      assertThat(topicCaptor.getValue()).isEqualTo("order.placed");
-      assertThat(keyCaptor.getValue()).isEqualTo("oid-1");
-      assertThat(valueCaptor.getValue()).isInstanceOf(DynamicMessage.class);
+      ProducerRecord<String, Object> record = recordCaptor.getValue();
+      assertThat(record.topic()).isEqualTo("order.placed");
+      assertThat(record.key()).isEqualTo("oid-1");
+      assertThat(record.value()).isInstanceOf(DynamicMessage.class);
+
+      // x-event-id 헤더 = outbox UUID toString UTF-8
+      Header header = record.headers().lastHeader(EventIdHeader.HEADER);
+      assertThat(header).isNotNull();
+      assertThat(new String(header.value(), StandardCharsets.UTF_8)).isEqualTo(eventId.toString());
 
       assertThat(event.getStatus()).isEqualTo(OutboxStatus.PUBLISHED);
       assertThat(event.getPublishedAt()).isNotNull();
@@ -95,21 +106,21 @@ class OutboxRelayTest {
     @DisplayName("PENDING 이벤트 없음 → Kafka 전송 없이 0 반환")
     void publishBatch_whenNoPendingEvents_sendsNothing() throws Exception {
       // given
-      OutboxEvent event = buildPendingEvent();
+      OutboxEvent event = buildPendingEvent(UUID.randomUUID());
       when(outboxRepository.lockPendingBatch(anyInt()))
           .thenReturn(List.of(event))
           .thenReturn(Collections.emptyList());
 
       // 첫 번째 호출: 1건 발행
       relay.publishBatch();
-      verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any());
+      verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
 
       // 두 번째 호출: 대상 없음
       int count = relay.publishBatch();
 
       assertThat(count).isEqualTo(0);
       // 총 전송 횟수는 여전히 1
-      verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any());
+      verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }
   }
 }

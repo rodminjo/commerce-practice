@@ -3,11 +3,15 @@ package com.rodminjo.commerce.common.outbox.relay;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.DynamicMessage;
 import com.rodminjo.commerce.common.outbox.entity.OutboxEvent;
+import com.rodminjo.commerce.common.outbox.inbox.EventIdHeader;
 import com.rodminjo.commerce.common.outbox.repository.OutboxRepository;
 import com.rodminjo.commerce.common.time.ClockHolder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +33,16 @@ public class OutboxRelay {
       try {
         Descriptor descriptor = registry.get(event.getEventType());
         DynamicMessage message = DynamicMessage.parseFrom(descriptor, event.getPayload());
-        kafkaTemplate.send(event.getTopic(), event.getPartitionKey(), message);
+        ProducerRecord<String, Object> record =
+            new ProducerRecord<>(event.getTopic(), event.getPartitionKey(), message);
+        // 멱등 컨슈머용 메시지 식별자 전파(outbox UUID). 컨슈머는 EventIdHeader.parse로 dedup 키를 추출.
+        record
+            .headers()
+            .add(
+                new RecordHeader(
+                    EventIdHeader.HEADER,
+                    event.getId().toString().getBytes(StandardCharsets.UTF_8)));
+        kafkaTemplate.send(record);
         event.markPublished(clockHolder.now());
         published++;
       } catch (Exception e) {

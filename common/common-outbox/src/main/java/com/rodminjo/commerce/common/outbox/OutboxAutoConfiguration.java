@@ -2,6 +2,9 @@ package com.rodminjo.commerce.common.outbox;
 
 import com.rodminjo.commerce.common.outbox.appender.JpaOutboxAppender;
 import com.rodminjo.commerce.common.outbox.entity.OutboxEvent;
+import com.rodminjo.commerce.common.outbox.inbox.IdempotentConsumer;
+import com.rodminjo.commerce.common.outbox.inbox.ProcessedEvent;
+import com.rodminjo.commerce.common.outbox.inbox.ProcessedEventRepository;
 import com.rodminjo.commerce.common.outbox.relay.OutboxRelay;
 import com.rodminjo.commerce.common.outbox.relay.OutboxRelayProperties;
 import com.rodminjo.commerce.common.outbox.relay.OutboxRelayScheduler;
@@ -36,8 +39,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 @AutoConfiguration
 @ConditionalOnClass(KafkaTemplate.class)
 @EnableConfigurationProperties(OutboxRelayProperties.class)
-@EnableJpaRepositories(basePackageClasses = OutboxRepository.class)
-@EntityScan(basePackageClasses = OutboxEvent.class)
+@EnableJpaRepositories(
+    basePackageClasses = {OutboxRepository.class, ProcessedEventRepository.class})
+@EntityScan(basePackageClasses = {OutboxEvent.class, ProcessedEvent.class})
 public class OutboxAutoConfiguration {
 
   /**
@@ -72,5 +76,16 @@ public class OutboxAutoConfiguration {
   @ConditionalOnMissingBean
   public OutboxRelayScheduler outboxRelayScheduler(OutboxRelay outboxRelay) {
     return new OutboxRelayScheduler(outboxRelay);
+  }
+
+  /**
+   * 멱등 컨슈머 빈. 클래스패스 추가만으로 서비스 리스너가 {@link IdempotentConsumer#once} 로 메시지 중복 처리를 차단할 수 있다. 서비스는
+   * {@code processed_event} 테이블(마이그레이션)을 자기 스키마에 추가해야 한다.
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public IdempotentConsumer idempotentConsumer(
+      ProcessedEventRepository processedEventRepository, ClockHolder clockHolder) {
+    return new IdempotentConsumer(processedEventRepository, clockHolder);
   }
 }
