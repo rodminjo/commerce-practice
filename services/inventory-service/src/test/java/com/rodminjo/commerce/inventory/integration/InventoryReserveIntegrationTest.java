@@ -12,11 +12,14 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
@@ -81,7 +84,10 @@ class InventoryReserveIntegrationTest {
 
   private void send(String topic, String key, Message event) {
     try (KafkaProducer<String, Message> producer = producer()) {
-      producer.send(new ProducerRecord<>(topic, key, event)).get();
+      // 멱등 컨슈머가 x-event-id 헤더를 필수로 요구하므로 테스트에서도 항상 포함.
+      RecordHeaders headers = new RecordHeaders();
+      headers.add("x-event-id", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+      producer.send(new ProducerRecord<>(topic, null, key, event, headers)).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
