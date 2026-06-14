@@ -14,8 +14,7 @@ public class Order {
   private final String customerId;
   private OrderStatus status;
   private final List<OrderLineItem> items;
-  private final long totalAmountMinor;
-  private final String currency;
+  private final Money total;
   private final Instant createdAt;
 
   private Order(
@@ -23,15 +22,13 @@ public class Order {
       String customerId,
       OrderStatus status,
       List<OrderLineItem> items,
-      long totalAmountMinor,
-      String currency,
+      Money total,
       Instant createdAt) {
     this.id = id;
     this.customerId = customerId;
     this.status = status;
     this.items = List.copyOf(items);
-    this.totalAmountMinor = totalAmountMinor;
-    this.currency = currency;
+    this.total = total;
     this.createdAt = createdAt;
   }
 
@@ -46,13 +43,12 @@ public class Order {
     if (items == null || items.isEmpty()) {
       throw new DomainException(OrderErrorCode.INVALID_ORDER, "주문 항목은 비어 있을 수 없습니다");
     }
-    if (currency == null || currency.length() != 3) {
-      throw new DomainException(OrderErrorCode.INVALID_ORDER, "currency는 3글자여야 합니다");
-    }
 
-    long total = items.stream().mapToLong(OrderLineItem::lineTotalMinor).sum();
+    // 각 라인 합계를 Money로 누적 — reduce가 라인 통화 == 주문 통화를 강제(다르면 예외).
+    Money total =
+        items.stream().map(OrderLineItem::lineTotal).reduce(Money.zero(currency), Money::plus);
 
-    return new Order(id, customerId, OrderStatus.PENDING, items, total, currency, now);
+    return new Order(id, customerId, OrderStatus.PENDING, items, total, now);
   }
 
   public static Order reconstitute(
@@ -63,7 +59,8 @@ public class Order {
       long totalAmountMinor,
       String currency,
       Instant createdAt) {
-    return new Order(id, customerId, status, items, totalAmountMinor, currency, createdAt);
+    return new Order(
+        id, customerId, status, items, Money.of(totalAmountMinor, currency), createdAt);
   }
 
   public void confirm() {

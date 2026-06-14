@@ -2,6 +2,7 @@ package com.rodminjo.commerce.order.adapter.out.persistence.jpa.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.rodminjo.commerce.order.domain.model.Money;
 import com.rodminjo.commerce.order.domain.model.Order;
 import com.rodminjo.commerce.order.domain.model.OrderLineItem;
 import com.rodminjo.commerce.order.domain.model.OrderStatus;
@@ -29,7 +30,9 @@ class OrderJpaEntityMappingTest {
     @DisplayName("Order → OrderJpaEntity → Order 라운드트립이 모든 필드를 보존한다")
     void roundTrip_preservesAllFields() {
       List<OrderLineItem> items =
-          List.of(OrderLineItem.of("p1", 2, 500L), OrderLineItem.of("p2", 1, 1000L));
+          List.of(
+              OrderLineItem.of("p1", 2, Money.of(500L, "KRW")),
+              OrderLineItem.of("p2", 1, Money.of(1000L, "KRW")));
       Order order = Order.place(ORDER_ID, "customer-1", items, "KRW", CREATED_AT);
 
       OrderJpaEntity entity = OrderJpaEntity.fromDomain(order);

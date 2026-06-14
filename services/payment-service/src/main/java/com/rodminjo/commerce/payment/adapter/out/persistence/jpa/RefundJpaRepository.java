@@ -22,8 +22,8 @@ public interface RefundJpaRepository extends JpaRepository<RefundJpaEntity, Stri
   @Query(
       value =
           "INSERT INTO refunds "
-              + "(refund_id, payment_id, order_id, amount_minor, idempotency_key, created_at) "
-              + "VALUES (:refundId, :paymentId, :orderId, :amountMinor, :idempotencyKey, :createdAt) "
+              + "(refund_id, payment_id, order_id, amount_minor, currency, idempotency_key, created_at) "
+              + "VALUES (:refundId, :paymentId, :orderId, :amountMinor, :currency, :idempotencyKey, :createdAt) "
               + "ON CONFLICT DO NOTHING",
       nativeQuery = true)
   int insertIfAbsent(
@@ -31,6 +31,7 @@ public interface RefundJpaRepository extends JpaRepository<RefundJpaEntity, Stri
       @Param("paymentId") String paymentId,
       @Param("orderId") String orderId,
       @Param("amountMinor") long amountMinor,
+      @Param("currency") String currency,
       @Param("idempotencyKey") String idempotencyKey,
       @Param("createdAt") Instant createdAt);
 

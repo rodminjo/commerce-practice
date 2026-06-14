@@ -74,7 +74,7 @@ public class PaymentService implements ProcessPaymentUseCase {
     return PaymentCompleted.newBuilder()
         .setOrderId(payment.getOrderId())
         .setPaymentId(payment.getId().toString())
-        .setAmountMinor(payment.getAmountMinor())
+        .setAmountMinor(payment.getAmount().amountMinor())
         .setOccurredAt(now())
         .build();
   }

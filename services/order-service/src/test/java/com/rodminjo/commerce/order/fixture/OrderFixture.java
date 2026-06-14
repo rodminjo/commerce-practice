@@ -2,6 +2,7 @@ package com.rodminjo.commerce.order.fixture;
 
 import com.rodminjo.commerce.order.application.port.in.PlaceOrderUseCase.PlaceOrderCommand;
 import com.rodminjo.commerce.order.application.port.in.PlaceOrderUseCase.PlaceOrderCommand.OrderItemCommand;
+import com.rodminjo.commerce.order.domain.model.Money;
 import com.rodminjo.commerce.order.domain.model.Order;
 import com.rodminjo.commerce.order.domain.model.OrderLineItem;
 import java.time.Instant;
@@ -25,9 +26,14 @@ public final class OrderFixture {
 
   private OrderFixture() {}
 
-  /** 기본 라인 아이템: {@value #DEFAULT_PRODUCT_ID} 1개 @ 1000. */
+  /** 기본 라인 아이템: {@value #DEFAULT_PRODUCT_ID} 1개 @ 1000 {@value #DEFAULT_CURRENCY}. */
   public static OrderLineItem lineItem() {
-    return OrderLineItem.of(DEFAULT_PRODUCT_ID, 1, 1000L);
+    return lineItem(DEFAULT_CURRENCY);
+  }
+
+  /** 지정 통화의 기본 라인 아이템(주문 통화와 일치시켜 통화 불변식 위반을 피한다). */
+  public static OrderLineItem lineItem(String currency) {
+    return OrderLineItem.of(DEFAULT_PRODUCT_ID, 1, Money.of(1000L, currency));
   }
 
   /** 기본 필드로 구성된 유효한 PENDING {@link Order}. */
@@ -51,7 +57,7 @@ public final class OrderFixture {
   public static final class OrderBuilder {
     private UUID id = UUID.randomUUID();
     private String customerId = DEFAULT_CUSTOMER_ID;
-    private List<OrderLineItem> items = List.of(lineItem());
+    private List<OrderLineItem> items = null; // null = build()에서 주문 통화에 맞춰 기본 라인 생성
     private String currency = DEFAULT_CURRENCY;
     private Instant now = FIXED_NOW;
 
@@ -86,7 +92,8 @@ public final class OrderFixture {
     }
 
     public Order build() {
-      return Order.place(id, customerId, items, currency, now);
+      List<OrderLineItem> lines = items != null ? items : List.of(lineItem(currency));
+      return Order.place(id, customerId, lines, currency, now);
     }
   }
 

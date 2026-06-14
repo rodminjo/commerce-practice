@@ -25,7 +25,7 @@ public class FakeRefundPort implements RefundPort {
   public void registerPayment(Payment payment) {
     paymentsByOrderId.put(payment.getOrderId(), payment);
     refundedByPaymentId.put(payment.getId(), 0L);
-    amountByPaymentId.put(payment.getId(), payment.getAmountMinor());
+    amountByPaymentId.put(payment.getId(), payment.getAmount().amountMinor());
   }
 
   @Override

@@ -46,8 +46,8 @@ public class OrderSagaService implements OrderSagaUseCase {
     PaymentRequested event =
         PaymentRequested.newBuilder()
             .setOrderId(order.getId().toString())
-            .setAmountMinor(order.getTotalAmountMinor())
-            .setCurrency(order.getCurrency())
+            .setAmountMinor(order.getTotal().amountMinor())
+            .setCurrency(order.getTotal().currency())
             .setIdempotencyKey(order.getId().toString())
             .setOccurredAt(now())
             .build();

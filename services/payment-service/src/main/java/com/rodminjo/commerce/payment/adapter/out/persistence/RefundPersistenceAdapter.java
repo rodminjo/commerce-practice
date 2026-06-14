@@ -44,7 +44,8 @@ public class RefundPersistenceAdapter implements RefundPort {
         refund.getRefundId(),
         refund.getPaymentId(),
         refund.getOrderId(),
-        refund.getAmountMinor(),
+        refund.getAmount().amountMinor(),
+        refund.getAmount().currency(),
         refund.getIdempotencyKey(),
         refund.getCreatedAt());
   }

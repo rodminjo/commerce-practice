@@ -15,7 +15,7 @@ public class Refund {
   private final String refundId;
   private final String paymentId;
   private final String orderId;
-  private final long amountMinor;
+  private final Money amount;
   private final String idempotencyKey;
   private final Instant createdAt;
 
@@ -23,13 +23,13 @@ public class Refund {
       String refundId,
       String paymentId,
       String orderId,
-      long amountMinor,
+      Money amount,
       String idempotencyKey,
       Instant createdAt) {
     this.refundId = refundId;
     this.paymentId = paymentId;
     this.orderId = orderId;
-    this.amountMinor = amountMinor;
+    this.amount = amount;
     this.idempotencyKey = idempotencyKey;
     this.createdAt = createdAt;
   }
@@ -39,6 +39,7 @@ public class Refund {
       String paymentId,
       String orderId,
       long amountMinor,
+      String currency,
       String idempotencyKey,
       Instant createdAt) {
     if (refundId == null || refundId.isBlank()) {
@@ -50,13 +51,14 @@ public class Refund {
     if (orderId == null || orderId.isBlank()) {
       throw new DomainException(PaymentErrorCode.INVALID_REFUND, "orderId는 비어 있을 수 없습니다");
     }
-    if (amountMinor <= 0) {
+    if (amountMinor <= 0) { // 환불액은 0 초과(Money는 0 허용이므로 루트가 강한 규칙을 책임)
       throw new DomainException(PaymentErrorCode.INVALID_REFUND, "amount는 0보다 커야 합니다");
     }
     if (idempotencyKey == null || idempotencyKey.isBlank()) {
       throw new DomainException(PaymentErrorCode.INVALID_REFUND, "idempotencyKey는 비어 있을 수 없습니다");
     }
-    return new Refund(refundId, paymentId, orderId, amountMinor, idempotencyKey, createdAt);
+    Money amount = Money.of(amountMinor, currency); // currency 3글자 검증을 Money가 담당
+    return new Refund(refundId, paymentId, orderId, amount, idempotencyKey, createdAt);
   }
 
   public static Refund reconstitute(
@@ -64,8 +66,10 @@ public class Refund {
       String paymentId,
       String orderId,
       long amountMinor,
+      String currency,
       String idempotencyKey,
       Instant createdAt) {
-    return new Refund(refundId, paymentId, orderId, amountMinor, idempotencyKey, createdAt);
+    return new Refund(
+        refundId, paymentId, orderId, Money.of(amountMinor, currency), idempotencyKey, createdAt);
   }
 }

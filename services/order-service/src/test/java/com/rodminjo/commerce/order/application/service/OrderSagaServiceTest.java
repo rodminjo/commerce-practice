@@ -8,6 +8,7 @@ import com.rodminjo.commerce.events.payment.PaymentRequested;
 import com.rodminjo.commerce.order.application.service.support.FakeOrderStateRepository;
 import com.rodminjo.commerce.order.application.service.support.FakeOutboxAppender;
 import com.rodminjo.commerce.order.application.service.support.FakeOutboxAppender.Appended;
+import com.rodminjo.commerce.order.domain.model.Money;
 import com.rodminjo.commerce.order.domain.model.Order;
 import com.rodminjo.commerce.order.domain.model.OrderLineItem;
 import com.rodminjo.commerce.order.domain.model.OrderStatus;
@@ -40,7 +41,7 @@ class OrderSagaServiceTest {
         ORDER_ID,
         "customer-1",
         status,
-        List.of(OrderLineItem.of("prod-1", 2, 1000L)),
+        List.of(OrderLineItem.of("prod-1", 2, Money.of(1000L, "KRW"))),
         2000L,
         "KRW",
         NOW);

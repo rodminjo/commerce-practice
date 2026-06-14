@@ -42,7 +42,7 @@ public class RefundOrderService implements RefundOrderUseCase {
 
     String orderId = command.orderId().toString();
     long amountMinor =
-        command.amountMinor() != null ? command.amountMinor() : order.getTotalAmountMinor();
+        command.amountMinor() != null ? command.amountMinor() : order.getTotal().amountMinor();
     String refundId = orderId + "-refund";
 
     RefundRequested event =

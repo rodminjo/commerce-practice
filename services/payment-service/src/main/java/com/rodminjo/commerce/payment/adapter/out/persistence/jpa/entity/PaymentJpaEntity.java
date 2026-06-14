@@ -45,8 +45,8 @@ public class PaymentJpaEntity extends BaseEntity {
     PaymentJpaEntity entity = new PaymentJpaEntity();
     entity.id = payment.getId();
     entity.orderId = payment.getOrderId();
-    entity.amountMinor = payment.getAmountMinor();
-    entity.currency = payment.getCurrency();
+    entity.amountMinor = payment.getAmount().amountMinor();
+    entity.currency = payment.getAmount().currency();
     entity.status = payment.getStatus();
     entity.idempotencyKey = payment.getIdempotencyKey();
     return entity;

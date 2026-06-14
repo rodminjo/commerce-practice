@@ -64,7 +64,7 @@ public class CancelOrderService implements CancelOrderUseCase {
           RefundRequested.newBuilder()
               .setOrderId(orderId)
               .setRefundId(refundId)
-              .setAmountMinor(order.getTotalAmountMinor())
+              .setAmountMinor(order.getTotal().amountMinor())
               .setReason(reason)
               .setIdempotencyKey(refundId)
               .setOccurredAt(now())

@@ -14,22 +14,15 @@ public class Payment {
 
   private final UUID id;
   private final String orderId;
-  private final long amountMinor;
-  private final String currency;
+  private final Money amount;
   private PaymentStatus status;
   private final String idempotencyKey;
 
   private Payment(
-      UUID id,
-      String orderId,
-      long amountMinor,
-      String currency,
-      PaymentStatus status,
-      String idempotencyKey) {
+      UUID id, String orderId, Money amount, PaymentStatus status, String idempotencyKey) {
     this.id = id;
     this.orderId = orderId;
-    this.amountMinor = amountMinor;
-    this.currency = currency;
+    this.amount = amount;
     this.status = status;
     this.idempotencyKey = idempotencyKey;
   }
@@ -42,13 +35,11 @@ public class Payment {
     if (orderId == null || orderId.isBlank()) {
       throw new DomainException(PaymentErrorCode.INVALID_PAYMENT, "orderId는 비어 있을 수 없습니다");
     }
-    if (amountMinor <= 0) {
+    if (amountMinor <= 0) { // 결제액은 0 초과(Money는 0 허용이므로 루트가 강한 규칙을 책임)
       throw new DomainException(PaymentErrorCode.INVALID_PAYMENT, "amount는 0보다 커야 합니다");
     }
-    if (currency == null || currency.length() != 3) {
-      throw new DomainException(PaymentErrorCode.INVALID_PAYMENT, "currency는 3글자여야 합니다");
-    }
-    return new Payment(id, orderId, amountMinor, currency, PaymentStatus.REQUESTED, idempotencyKey);
+    Money amount = Money.of(amountMinor, currency); // currency 3글자 검증을 Money가 담당
+    return new Payment(id, orderId, amount, PaymentStatus.REQUESTED, idempotencyKey);
   }
 
   public static Payment reconstitute(
@@ -58,7 +49,7 @@ public class Payment {
       String currency,
       PaymentStatus status,
       String idempotencyKey) {
-    return new Payment(id, orderId, amountMinor, currency, status, idempotencyKey);
+    return new Payment(id, orderId, Money.of(amountMinor, currency), status, idempotencyKey);
   }
 
   public boolean isComplete() {

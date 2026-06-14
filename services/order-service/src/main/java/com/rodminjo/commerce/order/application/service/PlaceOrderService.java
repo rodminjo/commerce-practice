@@ -7,6 +7,7 @@ import com.rodminjo.commerce.common.time.ClockHolder;
 import com.rodminjo.commerce.events.order.OrderPlaced;
 import com.rodminjo.commerce.order.application.port.in.PlaceOrderUseCase;
 import com.rodminjo.commerce.order.application.port.out.SaveOrderPort;
+import com.rodminjo.commerce.order.domain.model.Money;
 import com.rodminjo.commerce.order.domain.model.Order;
 import com.rodminjo.commerce.order.domain.model.OrderLineItem;
 import java.util.List;
@@ -29,7 +30,12 @@ public class PlaceOrderService implements PlaceOrderUseCase {
   public PlaceOrderResult place(PlaceOrderCommand command) {
     List<OrderLineItem> items =
         command.items().stream()
-            .map(i -> OrderLineItem.of(i.productId(), i.quantity(), i.unitPriceMinor()))
+            .map(
+                i ->
+                    OrderLineItem.of(
+                        i.productId(),
+                        i.quantity(),
+                        Money.of(i.unitPriceMinor(), command.currency())))
             .toList();
 
     Order order =
@@ -59,8 +65,8 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         OrderPlaced.newBuilder()
             .setOrderId(order.getId().toString())
             .setCustomerId(order.getCustomerId())
-            .setTotalAmountMinor(order.getTotalAmountMinor())
-            .setCurrency(order.getCurrency())
+            .setTotalAmountMinor(order.getTotal().amountMinor())
+            .setCurrency(order.getTotal().currency())
             .setOccurredAt(occurredAt);
 
     for (OrderLineItem item : order.getItems()) {
@@ -68,7 +74,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
           com.rodminjo.commerce.events.order.OrderLineItem.newBuilder()
               .setProductId(item.getProductId())
               .setQuantity(item.getQuantity())
-              .setUnitPriceMinor(item.getUnitPriceMinor())
+              .setUnitPriceMinor(item.getUnitPrice().amountMinor())
               .build();
       builder.addItems(protoItem);
     }

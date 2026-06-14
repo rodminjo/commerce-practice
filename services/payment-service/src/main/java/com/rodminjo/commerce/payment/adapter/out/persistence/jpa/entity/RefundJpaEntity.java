@@ -36,6 +36,9 @@ public class RefundJpaEntity {
   @Column(nullable = false)
   private long amountMinor;
 
+  @Column(nullable = false, length = 3)
+  private String currency;
+
   @Column(nullable = false, length = 128)
   private String idempotencyKey;
 
@@ -44,6 +47,6 @@ public class RefundJpaEntity {
 
   public Refund toDomain() {
     return Refund.reconstitute(
-        refundId, paymentId, orderId, amountMinor, idempotencyKey, createdAt);
+        refundId, paymentId, orderId, amountMinor, currency, idempotencyKey, createdAt);
   }
 }

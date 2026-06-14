@@ -1,6 +1,7 @@
 package com.rodminjo.commerce.order.adapter.out.persistence.jpa.entity;
 
 import com.rodminjo.commerce.common.infra.persistence.BaseEntity;
+import com.rodminjo.commerce.order.domain.model.Money;
 import com.rodminjo.commerce.order.domain.model.OrderLineItem;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,10 +44,11 @@ public class OrderItemJpaEntity extends BaseEntity {
 
   public static OrderItemJpaEntity fromDomain(UUID orderId, OrderLineItem item) {
     return new OrderItemJpaEntity(
-        orderId, item.getProductId(), item.getQuantity(), item.getUnitPriceMinor());
+        orderId, item.getProductId(), item.getQuantity(), item.getUnitPrice().amountMinor());
   }
 
-  public OrderLineItem toDomain() {
-    return OrderLineItem.of(productId, quantity, unitPriceMinor);
+  /** 통화는 주문(헤더) 소유 — order_items엔 통화 컬럼이 없어 주문 통화를 주입해 Money를 복원한다. */
+  public OrderLineItem toDomain(String currency) {
+    return OrderLineItem.of(productId, quantity, Money.of(unitPriceMinor, currency));
   }
 }

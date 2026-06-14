@@ -56,6 +56,7 @@ public class RefundService implements ProcessRefundUseCase {
             paymentId.toString(),
             command.orderId(),
             command.amountMinor(),
+            payment.get().getAmount().currency(), // 환불 통화 = 결제 통화
             command.idempotencyKey(),
             clockHolder.now());
     if (refundPort.insertIfAbsent(refund) == 0) {
@@ -65,7 +66,7 @@ public class RefundService implements ProcessRefundUseCase {
           existing.getOrderId(),
           existing.getPaymentId(),
           existing.getRefundId(),
-          existing.getAmountMinor());
+          existing.getAmount().amountMinor());
       return;
     }
 

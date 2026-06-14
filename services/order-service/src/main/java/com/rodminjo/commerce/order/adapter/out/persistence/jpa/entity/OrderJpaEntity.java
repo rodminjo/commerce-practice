@@ -40,14 +40,14 @@ public class OrderJpaEntity extends BaseEntity {
     entity.id = order.getId();
     entity.customerId = order.getCustomerId();
     entity.status = order.getStatus();
-    entity.totalAmountMinor = order.getTotalAmountMinor();
-    entity.currency = order.getCurrency();
+    entity.totalAmountMinor = order.getTotal().amountMinor();
+    entity.currency = order.getTotal().currency();
     entity.createdAt = order.getCreatedAt();
     return entity;
   }
 
   public Order toDomain(List<OrderItemJpaEntity> items) {
-    List<OrderLineItem> domainItems = items.stream().map(OrderItemJpaEntity::toDomain).toList();
+    List<OrderLineItem> domainItems = items.stream().map(item -> item.toDomain(currency)).toList();
     return Order.reconstitute(
         id, customerId, status, domainItems, totalAmountMinor, currency, createdAt);
   }

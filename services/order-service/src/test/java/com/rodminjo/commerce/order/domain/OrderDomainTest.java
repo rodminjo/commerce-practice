@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.rodminjo.commerce.common.error.DomainException;
+import com.rodminjo.commerce.order.domain.model.Money;
 import com.rodminjo.commerce.order.domain.model.Order;
 import com.rodminjo.commerce.order.domain.model.OrderLineItem;
 import com.rodminjo.commerce.order.domain.model.OrderStatus;
@@ -27,15 +28,17 @@ class OrderDomainTest {
     @DisplayName("아이템 2개의 totalAmountMinor가 합산된다")
     void place_calculatesTotalAmount() {
       List<OrderLineItem> items =
-          List.of(OrderLineItem.of("product-A", 2, 1000L), OrderLineItem.of("product-B", 3, 500L));
+          List.of(
+              OrderLineItem.of("product-A", 2, Money.of(1000L, "KRW")),
+              OrderLineItem.of("product-B", 3, Money.of(500L, "KRW")));
 
       Order order = Order.place(UUID.randomUUID(), "customer-1", items, "KRW", FIXED_NOW);
 
-      assertThat(order.getTotalAmountMinor()).isEqualTo(3500L);
+      assertThat(order.getTotal().amountMinor()).isEqualTo(3500L);
       assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
       assertThat(order.getId()).isNotNull();
       assertThat(order.getCustomerId()).isEqualTo("customer-1");
-      assertThat(order.getCurrency()).isEqualTo("KRW");
+      assertThat(order.getTotal().currency()).isEqualTo("KRW");
       assertThat(order.getCreatedAt()).isNotNull();
     }
 
@@ -55,7 +58,7 @@ class OrderDomainTest {
     @Test
     @DisplayName("blank customerId → DomainException(INVALID_ORDER)")
     void place_blankCustomerId_throwsDomainException() {
-      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 1, 1000L));
+      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 1, Money.of(1000L, "KRW")));
 
       assertThatThrownBy(() -> Order.place(UUID.randomUUID(), "  ", items, "KRW", FIXED_NOW))
           .isInstanceOf(DomainException.class)
@@ -69,7 +72,7 @@ class OrderDomainTest {
     @Test
     @DisplayName("null customerId → DomainException(INVALID_ORDER)")
     void place_nullCustomerId_throwsDomainException() {
-      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 1, 1000L));
+      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 1, Money.of(1000L, "KRW")));
 
       assertThatThrownBy(() -> Order.place(UUID.randomUUID(), null, items, "KRW", FIXED_NOW))
           .isInstanceOf(DomainException.class)
@@ -83,7 +86,7 @@ class OrderDomainTest {
     @Test
     @DisplayName("currency가 3글자가 아니면 → DomainException(INVALID_ORDER)")
     void place_invalidCurrency_throwsDomainException() {
-      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 1, 1000L));
+      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 1, Money.of(1000L, "KRW")));
 
       assertThatThrownBy(() -> Order.place(UUID.randomUUID(), "customer-1", items, "KR", FIXED_NOW))
           .isInstanceOf(DomainException.class)
@@ -102,33 +105,34 @@ class OrderDomainTest {
     @Test
     @DisplayName("quantity <= 0 → DomainException")
     void orderLineItem_invalidQuantity_throwsDomainException() {
-      assertThatThrownBy(() -> OrderLineItem.of("product-A", 0, 1000L))
+      assertThatThrownBy(() -> OrderLineItem.of("product-A", 0, Money.of(1000L, "KRW")))
           .isInstanceOf(DomainException.class);
 
-      assertThatThrownBy(() -> OrderLineItem.of("product-A", -1, 1000L))
+      assertThatThrownBy(() -> OrderLineItem.of("product-A", -1, Money.of(1000L, "KRW")))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("unitPriceMinor < 0 → DomainException")
     void orderLineItem_negativePrice_throwsDomainException() {
-      assertThatThrownBy(() -> OrderLineItem.of("product-A", 1, -1L))
+      assertThatThrownBy(() -> OrderLineItem.of("product-A", 1, Money.of(-1L, "KRW")))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("blank productId → DomainException")
     void orderLineItem_blankProductId_throwsDomainException() {
-      assertThatThrownBy(() -> OrderLineItem.of("", 1, 1000L)).isInstanceOf(DomainException.class);
-      assertThatThrownBy(() -> OrderLineItem.of("  ", 1, 1000L))
+      assertThatThrownBy(() -> OrderLineItem.of("", 1, Money.of(1000L, "KRW")))
+          .isInstanceOf(DomainException.class);
+      assertThatThrownBy(() -> OrderLineItem.of("  ", 1, Money.of(1000L, "KRW")))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
-    @DisplayName("lineTotalMinor = quantity * unitPriceMinor")
-    void orderLineItem_lineTotalMinor() {
-      OrderLineItem item = OrderLineItem.of("product-A", 3, 500L);
-      assertThat(item.lineTotalMinor()).isEqualTo(1500L);
+    @DisplayName("lineTotal = quantity * unitPrice (Money)")
+    void orderLineItem_lineTotal() {
+      OrderLineItem item = OrderLineItem.of("product-A", 3, Money.of(500L, "KRW"));
+      assertThat(item.lineTotal()).isEqualTo(Money.of(1500L, "KRW"));
     }
   }
 
@@ -224,7 +228,7 @@ class OrderDomainTest {
           UUID.randomUUID(),
           "customer-1",
           status,
-          List.of(OrderLineItem.of("product-A", 2, 1000L)),
+          List.of(OrderLineItem.of("product-A", 2, Money.of(1000L, "KRW"))),
           2000L,
           "KRW",
           FIXED_NOW);
@@ -288,14 +292,14 @@ class OrderDomainTest {
     void reconstitute_rebuildsOrder() {
       UUID id = UUID.randomUUID();
       java.time.Instant now = java.time.Instant.now();
-      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 2, 1000L));
+      List<OrderLineItem> items = List.of(OrderLineItem.of("product-A", 2, Money.of(1000L, "KRW")));
 
       Order order =
           Order.reconstitute(id, "customer-1", OrderStatus.CONFIRMED, items, 2000L, "KRW", now);
 
       assertThat(order.getId()).isEqualTo(id);
       assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
-      assertThat(order.getTotalAmountMinor()).isEqualTo(2000L);
+      assertThat(order.getTotal().amountMinor()).isEqualTo(2000L);
       assertThat(order.getCreatedAt()).isEqualTo(now);
     }
   }
