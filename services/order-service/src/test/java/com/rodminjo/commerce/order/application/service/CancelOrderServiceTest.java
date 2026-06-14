@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.rodminjo.commerce.common.error.DomainException;
 import com.rodminjo.commerce.common.time.ClockHolder;
 import com.rodminjo.commerce.events.order.OrderCancelled;
+import com.rodminjo.commerce.events.payment.RefundRequested;
 import com.rodminjo.commerce.order.application.port.in.CancelOrderUseCase.CancelOrderCommand;
 import com.rodminjo.commerce.order.application.service.support.FakeOrderStateRepository;
 import com.rodminjo.commerce.order.application.service.support.FakeOutboxAppender;
@@ -69,6 +70,36 @@ class CancelOrderServiceTest {
       assertThat(appended.topic()).isEqualTo("order.cancelled");
       assertThat(appended.partitionKey()).isEqualTo(ORDER_ID.toString());
       assertThat(((OrderCancelled) appended.event()).getReason()).isEqualTo("changed-mind");
+    }
+
+    @Test
+    @DisplayName(
+        "CONFIRMED(결제 완료) 주문 취소 → CANCELLED + order.cancelled + refund.requested 동시 적재 (보상 심화)")
+    void cancelConfirmedOrderCompensatesWithRefund() {
+      orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+
+      service.cancel(new CancelOrderCommand(ORDER_ID, "out-of-stock"));
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+      assertThat(outboxAppender.appended()).hasSize(2);
+
+      Appended cancelled = outboxAppender.appended().get(0);
+      assertThat(cancelled.topic()).isEqualTo("order.cancelled");
+      assertThat(((OrderCancelled) cancelled.event()).getReason()).isEqualTo("out-of-stock");
+
+      Appended refund = outboxAppender.appended().get(1);
+      assertThat(refund.aggregateType()).isEqualTo("Order");
+      assertThat(refund.aggregateId()).isEqualTo(ORDER_ID.toString());
+      assertThat(refund.topic()).isEqualTo("refund.requested");
+      assertThat(refund.partitionKey()).isEqualTo(ORDER_ID.toString());
+      RefundRequested event = (RefundRequested) refund.event();
+      assertThat(event.getOrderId()).isEqualTo(ORDER_ID.toString());
+      assertThat(event.getAmountMinor()).isEqualTo(1000L);
+      assertThat(event.getReason()).isEqualTo("out-of-stock");
+      // refundId/idempotencyKey 는 주문당 고정(취소 환불) → 결제 측 멱등.
+      assertThat(event.getRefundId()).isEqualTo(ORDER_ID + "-cancel-refund");
+      assertThat(event.getIdempotencyKey()).isEqualTo(event.getRefundId());
     }
   }
 

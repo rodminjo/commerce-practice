@@ -15,4 +15,10 @@ public interface OrderSagaUseCase {
 
   /** 결제 실패 → 주문 취소 및 보상 이벤트(재고 해제) 발행. */
   void onPaymentFailed(String orderId, String reason);
+
+  /** 환불 완료 → 주문 REFUNDED 확정. 중복/늦은 이벤트는 상태 머신 가드가 무시. */
+  void onRefundCompleted(String orderId);
+
+  /** 환불 실패 → 로깅(상태 유지). */
+  void onRefundFailed(String orderId, String reason);
 }

@@ -79,4 +79,12 @@ public class Order {
     }
     this.status = OrderStatus.CANCELLED;
   }
+
+  /** 환불 확정 전이(CONFIRMED/COMPLETED → REFUNDED). 가드 위반 시 예외. */
+  public void refund() {
+    if (!status.canTransitionTo(OrderStatus.REFUNDED)) {
+      throw new DomainException(OrderErrorCode.INVALID_STATE_TRANSITION);
+    }
+    this.status = OrderStatus.REFUNDED;
+  }
 }

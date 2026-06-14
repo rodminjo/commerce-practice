@@ -23,4 +23,10 @@ public class KafkaTopicConfig {
   public NewTopic paymentRequested() {
     return TopicBuilder.name("payment.requested").partitions(3).replicas(1).build();
   }
+
+  // Order가 환불 요청(refund.requested) 생산자이므로 해당 토픽 생성 책임 보유.
+  @Bean
+  public NewTopic refundRequested() {
+    return TopicBuilder.name("refund.requested").partitions(3).replicas(1).build();
+  }
 }

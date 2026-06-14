@@ -14,6 +14,7 @@ import com.rodminjo.commerce.order.application.port.in.CancelOrderUseCase;
 import com.rodminjo.commerce.order.application.port.in.GetOrderUseCase;
 import com.rodminjo.commerce.order.application.port.in.GetOrderUseCase.OrderView;
 import com.rodminjo.commerce.order.application.port.in.PlaceOrderUseCase;
+import com.rodminjo.commerce.order.application.port.in.RefundOrderUseCase;
 import com.rodminjo.commerce.order.config.SecurityConfig;
 import com.rodminjo.commerce.order.domain.OrderErrorCode;
 import com.rodminjo.commerce.order.domain.model.OrderStatus;
@@ -55,6 +56,8 @@ class OrderControllerTest {
   @MockitoBean private GetOrderUseCase getOrderUseCase;
 
   @MockitoBean private CancelOrderUseCase cancelOrderUseCase;
+
+  @MockitoBean private RefundOrderUseCase refundOrderUseCase;
 
   @MockitoBean private JwtDecoder jwtDecoder;
 
@@ -227,6 +230,64 @@ class OrderControllerTest {
 
       mockMvc
           .perform(post("/api/orders/" + id + "/cancel").with(jwt()))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.code").value("INVALID_STATE_TRANSITION"));
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /api/orders/{id}/refund — 주문 환불")
+  class RefundOrder {
+
+    @Test
+    @DisplayName("토큰 없이 요청 → 401 Unauthorized")
+    void refundOrder_noToken_returns401() throws Exception {
+      mockMvc
+          .perform(post("/api/orders/" + UUID.randomUUID() + "/refund"))
+          .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("유효한 JWT + 정상 요청(바디 없음) → 200 REFUNDED")
+    void refundOrder_withJwt_returns200() throws Exception {
+      UUID id = UUID.randomUUID();
+
+      mockMvc
+          .perform(post("/api/orders/" + id + "/refund").with(jwt()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.orderId").value(id.toString()))
+          .andExpect(jsonPath("$.status").value("REFUNDED"));
+    }
+
+    @Test
+    @DisplayName("부분 환불 금액 바디 → 200 REFUNDED")
+    void refundOrder_withPartialAmount_returns200() throws Exception {
+      UUID id = UUID.randomUUID();
+      String body =
+          """
+          {"amountMinor":500,"reason":"partial"}
+          """;
+
+      mockMvc
+          .perform(
+              post("/api/orders/" + id + "/refund")
+                  .with(jwt())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(body))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.status").value("REFUNDED"));
+    }
+
+    @Test
+    @DisplayName("환불 불가 상태 주문 → 409 (도메인 가드)")
+    void refundOrder_whenNotRefundable_returns409() throws Exception {
+      UUID id = UUID.randomUUID();
+      org.mockito.Mockito.doThrow(new DomainException(OrderErrorCode.INVALID_STATE_TRANSITION))
+          .when(refundOrderUseCase)
+          .refund(any());
+
+      mockMvc
+          .perform(post("/api/orders/" + id + "/refund").with(jwt()))
           .andExpect(status().isConflict())
           .andExpect(jsonPath("$.code").value("INVALID_STATE_TRANSITION"));
     }

@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 // AutoConfigurationExcludeFilter에 의해 이중 등록 방지, @WebMvcTest 슬라이스 미포함.
 // outbox JPA 리포지토리/엔티티는 자체 패키지 범위로 자동 등록되므로,
 // 이 서비스의 @EnableJpaRepositories/@EntityScan은 com.rodminjo.commerce.order로 한정.
+// @RetryableTopic 인프라(@EnableKafkaRetryTopic)는 KafkaRetryConfig로 분리: @WebMvcTest 슬라이스에 누출되지 않도록.
 @SpringBootApplication(scanBasePackages = "com.rodminjo.commerce")
 @EntityScan(basePackages = "com.rodminjo.commerce.order")
 @EnableScheduling

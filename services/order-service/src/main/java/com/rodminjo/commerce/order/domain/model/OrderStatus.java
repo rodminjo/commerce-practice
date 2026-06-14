@@ -14,7 +14,7 @@ public enum OrderStatus {
   private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS =
       Map.of(
           PENDING, EnumSet.of(CONFIRMED, CANCELLED),
-          CONFIRMED, EnumSet.of(COMPLETED, CANCELLED),
+          CONFIRMED, EnumSet.of(COMPLETED, CANCELLED, REFUNDED),
           COMPLETED, EnumSet.of(REFUNDED),
           CANCELLED, EnumSet.noneOf(OrderStatus.class),
           REFUNDED, EnumSet.noneOf(OrderStatus.class));

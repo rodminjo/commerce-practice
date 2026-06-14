@@ -3,6 +3,8 @@ package com.rodminjo.commerce.order.config;
 import com.rodminjo.commerce.events.inventory.InventoryReserved;
 import com.rodminjo.commerce.events.payment.PaymentCompleted;
 import com.rodminjo.commerce.events.payment.PaymentFailed;
+import com.rodminjo.commerce.events.payment.RefundCompleted;
+import com.rodminjo.commerce.events.payment.RefundFailed;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import java.util.HashMap;
@@ -64,5 +66,17 @@ public class KafkaConsumerConfig {
   public ConcurrentKafkaListenerContainerFactory<String, PaymentFailed>
       paymentFailedListenerContainerFactory() {
     return factory(PaymentFailed.class);
+  }
+
+  @Bean
+  public ConcurrentKafkaListenerContainerFactory<String, RefundCompleted>
+      refundCompletedListenerContainerFactory() {
+    return factory(RefundCompleted.class);
+  }
+
+  @Bean
+  public ConcurrentKafkaListenerContainerFactory<String, RefundFailed>
+      refundFailedListenerContainerFactory() {
+    return factory(RefundFailed.class);
   }
 }

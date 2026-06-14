@@ -81,6 +81,26 @@ public class OrderSagaService implements OrderSagaUseCase {
     outboxAppender.append("Order", orderId, "order.cancelled", orderId, cancelled(orderId, reason));
   }
 
+  /** 환불 완료 → 주문 REFUNDED 확정. 이미 REFUNDED이거나 환불 불가 상태면 가드가 무시(중복 안전). */
+  @Override
+  @Transactional
+  public void onRefundCompleted(String orderId) {
+    Order order = load(orderId);
+    if (!order.getStatus().canTransitionTo(OrderStatus.REFUNDED)) {
+      log.info("Ignoring refund.completed for order {} in status {}", orderId, order.getStatus());
+      return;
+    }
+    order.refund();
+    orderStateRepositoryPort.update(order);
+  }
+
+  /** 환불 실패 → 상태 유지, 로깅만. (보상/재시도 정책은 추후 도입.) */
+  @Override
+  @Transactional
+  public void onRefundFailed(String orderId, String reason) {
+    log.warn("refund.failed for order {}: {}", orderId, reason);
+  }
+
   private Order load(String orderId) {
     return orderStateRepositoryPort
         .findById(UUID.fromString(orderId))

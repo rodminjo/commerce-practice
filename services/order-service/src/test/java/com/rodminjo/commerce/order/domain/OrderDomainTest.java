@@ -216,6 +216,70 @@ class OrderDomainTest {
   }
 
   @Nested
+  @DisplayName("refund() — 주문 환불")
+  class Refund {
+
+    private static Order orderWith(OrderStatus status) {
+      return Order.reconstitute(
+          UUID.randomUUID(),
+          "customer-1",
+          status,
+          List.of(OrderLineItem.of("product-A", 2, 1000L)),
+          2000L,
+          "KRW",
+          FIXED_NOW);
+    }
+
+    @Test
+    @DisplayName("CONFIRMED 상태에서 refund() → REFUNDED")
+    void refund_fromConfirmed_becomesRefunded() {
+      Order order = orderWith(OrderStatus.CONFIRMED);
+
+      order.refund();
+
+      assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    }
+
+    @Test
+    @DisplayName("COMPLETED 상태에서 refund() → REFUNDED")
+    void refund_fromCompleted_becomesRefunded() {
+      Order order = orderWith(OrderStatus.COMPLETED);
+
+      order.refund();
+
+      assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    }
+
+    @Test
+    @DisplayName("PENDING 상태에서 refund() → DomainException(INVALID_STATE_TRANSITION)")
+    void refund_fromPending_throwsDomainException() {
+      Order order = orderWith(OrderStatus.PENDING);
+
+      assertThatThrownBy(order::refund)
+          .isInstanceOf(DomainException.class)
+          .satisfies(
+              ex -> {
+                DomainException de = (DomainException) ex;
+                assertThat(de.errorCode().code()).isEqualTo("INVALID_STATE_TRANSITION");
+              });
+    }
+
+    @Test
+    @DisplayName("REFUNDED 상태에서 refund() 재호출 → DomainException(INVALID_STATE_TRANSITION)")
+    void refund_alreadyRefunded_throwsDomainException() {
+      Order order = orderWith(OrderStatus.REFUNDED);
+
+      assertThatThrownBy(order::refund)
+          .isInstanceOf(DomainException.class)
+          .satisfies(
+              ex -> {
+                DomainException de = (DomainException) ex;
+                assertThat(de.errorCode().code()).isEqualTo("INVALID_STATE_TRANSITION");
+              });
+    }
+  }
+
+  @Nested
   @DisplayName("reconstitute() — 주문 재구성")
   class Reconstitute {
 

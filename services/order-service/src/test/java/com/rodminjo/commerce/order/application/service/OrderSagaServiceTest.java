@@ -141,4 +141,48 @@ class OrderSagaServiceTest {
       assertThat(outboxAppender.appended()).isEmpty();
     }
   }
+
+  @Nested
+  @DisplayName("onRefundCompleted — 환불 완료 처리")
+  class OnRefundCompleted {
+
+    @Test
+    @DisplayName("CONFIRMED 주문 → REFUNDED로 상태 갱신")
+    void onRefundCompletedConfirmsRefund() {
+      orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+
+      service.onRefundCompleted(ORDER_ID.toString());
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    }
+
+    @Test
+    @DisplayName("이미 REFUNDED 상태 → 중복 무시, 상태 불변")
+    void onRefundCompletedIgnoresDuplicate() {
+      orderStateRepository.seed(orderWith(OrderStatus.REFUNDED));
+
+      service.onRefundCompleted(ORDER_ID.toString());
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    }
+  }
+
+  @Nested
+  @DisplayName("onRefundFailed — 환불 실패 처리")
+  class OnRefundFailed {
+
+    @Test
+    @DisplayName("상태 유지(로깅만), outbox 미적재")
+    void onRefundFailedKeepsState() {
+      orderStateRepository.seed(orderWith(OrderStatus.CONFIRMED));
+
+      service.onRefundFailed(ORDER_ID.toString(), "gateway-error");
+
+      Order stored = orderStateRepository.findById(ORDER_ID).orElseThrow();
+      assertThat(stored.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+      assertThat(outboxAppender.appended()).isEmpty();
+    }
+  }
 }

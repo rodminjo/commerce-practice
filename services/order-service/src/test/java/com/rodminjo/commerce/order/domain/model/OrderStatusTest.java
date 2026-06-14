@@ -23,7 +23,7 @@ class OrderStatusTest {
     "CONFIRMED, CONFIRMED, false",
     "CONFIRMED, COMPLETED, true",
     "CONFIRMED, CANCELLED, true",
-    "CONFIRMED, REFUNDED,  false",
+    "CONFIRMED, REFUNDED,  true",
     // COMPLETED 출발
     "COMPLETED, PENDING,   false",
     "COMPLETED, CONFIRMED, false",
