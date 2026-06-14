@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package commerce.events.payment;
+
+option java_package = "com.rodminjo.commerce.events.payment";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+message RefundRequested {
+  string order_id = 1;
+  string payment_id = 2;
+  string refund_id = 3;
+  int64 amount_minor = 4; // 부분 환불 지원
+  string reason = 5;
+  string idempotency_key = 6; // = refund_id
+  google.protobuf.Timestamp occurred_at = 7;
+}
