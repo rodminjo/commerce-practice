@@ -11,12 +11,16 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +39,15 @@ import org.springframework.test.context.DynamicPropertySource;
  */
 @SpringBootTest
 @EmbeddedKafka(
-    topics = {"payment.requested", "payment.completed", "payment.failed"},
+    topics = {
+      "payment.requested",
+      "payment.requested-retry-0",
+      "payment.requested-retry-1",
+      "payment.requested-retry-2",
+      "payment.requested-dlt",
+      "payment.completed",
+      "payment.failed"
+    },
     partitions = 1,
     bootstrapServersProperty = "spring.kafka.bootstrap-servers")
 class PaymentProcessIntegrationTest {
@@ -85,7 +97,10 @@ class PaymentProcessIntegrationTest {
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaProtobufSerializer.class);
     props.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, MOCK_REGISTRY);
     try (KafkaProducer<String, Message> producer = new KafkaProducer<>(props)) {
-      producer.send(new ProducerRecord<>("payment.requested", orderId, event)).get();
+      // 멱등 컨슈머가 요구하는 x-event-id 헤더 부착(릴레이가 운영에서 적재하는 헤더와 동일).
+      Headers headers = new RecordHeaders();
+      headers.add("x-event-id", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+      producer.send(new ProducerRecord<>("payment.requested", null, orderId, event, headers)).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

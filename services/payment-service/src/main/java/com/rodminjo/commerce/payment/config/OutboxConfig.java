@@ -3,6 +3,8 @@ package com.rodminjo.commerce.payment.config;
 import com.rodminjo.commerce.common.outbox.relay.OutboxTypeRegistry;
 import com.rodminjo.commerce.events.payment.PaymentCompleted;
 import com.rodminjo.commerce.events.payment.PaymentFailed;
+import com.rodminjo.commerce.events.payment.RefundCompleted;
+import com.rodminjo.commerce.events.payment.RefundFailed;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +16,8 @@ public class OutboxConfig {
     OutboxTypeRegistry registry = new OutboxTypeRegistry();
     registry.register(PaymentCompleted.getDescriptor());
     registry.register(PaymentFailed.getDescriptor());
+    registry.register(RefundCompleted.getDescriptor());
+    registry.register(RefundFailed.getDescriptor());
     return registry;
   }
 }

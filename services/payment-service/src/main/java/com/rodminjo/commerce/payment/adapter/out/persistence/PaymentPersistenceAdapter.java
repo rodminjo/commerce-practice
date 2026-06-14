@@ -18,4 +18,9 @@ public class PaymentPersistenceAdapter implements SavePaymentPort {
     paymentJpaRepository.save(PaymentJpaEntity.fromDomain(payment));
     return payment;
   }
+
+  @Override
+  public boolean existsByIdempotencyKey(String idempotencyKey) {
+    return paymentJpaRepository.existsByIdempotencyKey(idempotencyKey);
+  }
 }

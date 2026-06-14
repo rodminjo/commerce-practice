@@ -35,6 +35,11 @@ public class PaymentService implements ProcessPaymentUseCase {
   @Override
   @Transactional
   public void process(ProcessPaymentCommand command) {
+    // 결제 비즈니스 멱등: 같은 idempotencyKey(=orderId) 결제가 이미 있으면 재처리하지 않는다(payments 단일 행 보장).
+    if (savePaymentPort.existsByIdempotencyKey(command.idempotencyKey())) {
+      return;
+    }
+
     Payment payment =
         Payment.request(
             idGenerator.newId(),

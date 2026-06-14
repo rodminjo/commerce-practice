@@ -37,6 +37,10 @@ public class PaymentJpaEntity extends BaseEntity {
   @Column(nullable = false, length = 128)
   private String idempotencyKey;
 
+  // 부분/전체 환불 누적액. 환불 시 RefundPort의 원자적 조건부 UPDATE로만 증가하며 도메인 Payment에는 노출하지 않는다.
+  @Column(nullable = false)
+  private long refundedAmountMinor;
+
   public static PaymentJpaEntity fromDomain(Payment payment) {
     PaymentJpaEntity entity = new PaymentJpaEntity();
     entity.id = payment.getId();

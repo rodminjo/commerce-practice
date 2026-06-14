@@ -19,6 +19,11 @@ public class FakeSavePaymentPort implements SavePaymentPort {
     return payment;
   }
 
+  @Override
+  public boolean existsByIdempotencyKey(String idempotencyKey) {
+    return saved.stream().anyMatch(p -> p.getIdempotencyKey().equals(idempotencyKey));
+  }
+
   /** 호출 순서대로 기록된 전체 저장 결제 목록. */
   public List<Payment> saved() {
     return saved;

@@ -1,6 +1,7 @@
 package com.rodminjo.commerce.payment.config;
 
 import com.rodminjo.commerce.events.payment.PaymentRequested;
+import com.rodminjo.commerce.events.payment.RefundRequested;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import java.util.HashMap;
@@ -50,5 +51,11 @@ public class KafkaConsumerConfig {
   public ConcurrentKafkaListenerContainerFactory<String, PaymentRequested>
       paymentRequestedListenerContainerFactory() {
     return factory(PaymentRequested.class);
+  }
+
+  @Bean
+  public ConcurrentKafkaListenerContainerFactory<String, RefundRequested>
+      refundRequestedListenerContainerFactory() {
+    return factory(RefundRequested.class);
   }
 }

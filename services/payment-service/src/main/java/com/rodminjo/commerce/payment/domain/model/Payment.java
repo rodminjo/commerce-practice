@@ -61,6 +61,10 @@ public class Payment {
     return new Payment(id, orderId, amountMinor, currency, status, idempotencyKey);
   }
 
+  public boolean isComplete() {
+    return this.status == PaymentStatus.COMPLETED;
+  }
+
   public void complete() {
     requireRequested();
     this.status = PaymentStatus.COMPLETED;
